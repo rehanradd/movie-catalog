@@ -1,1 +1,128 @@
-<h1>Good Day!</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Catalog</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #111;
+            color: white;
+            text-align: center;
+        }
+        h1 {
+            margin-top: 20px;
+        }
+        input {
+            width: 80%;
+            padding: 10px;
+            margin: 20px 0;
+            font-size: 16px;
+        }
+        .movie-list {
+            max-width: 900px;
+            margin: auto;
+            text-align: left;
+        }
+        .folder {
+            margin-top: 10px;
+            padding: 10px;
+            background: #222;
+            border-radius: 5px;
+            position: relative;
+        }
+        .folder h3 {
+            cursor: pointer;
+            padding: 10px;
+            margin: 0;
+            background: #333;
+            border-radius: 5px;
+        }
+        .file-count {
+            position: absolute;
+            right: 15px;
+            top: 12px;
+            background: #444;
+            color: white;
+            padding: 3px 7px;
+            border-radius: 10px;
+            font-size: 14px;
+        }
+        .folder ul {
+            display: none;
+            list-style: none;
+            padding-left: 20px;
+            margin: 0;
+        }
+        .file {
+            color: #ffcc00;
+            padding: 5px;
+        }
+        .new {
+            color: #00ff00;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Movie Catalog</h1>
+    <input type="text" id="search" placeholder="Search for a movie or folder..." onkeyup="searchMovies()">
+    
+    <div class="movie-list" id="movie-list"></div>
+
+    <script>
+        async function loadMovies() {
+            const response = await fetch("movies.json");
+            const data = await response.json();
+            const movieList = document.getElementById("movie-list");
+
+            movieList.innerHTML = `<p>Last Updated: ${data.last_updated}</p>`;
+
+            Object.keys(data.movies).forEach(folder => {
+                let fileList = data.movies[folder].map(movie => 
+                    movie.includes("[NEW]") ? `<li class="file new">${movie.replace("[NEW]", "")} 🔥</li>` : `<li class="file">${movie}</li>`
+                ).join("");
+
+                movieList.innerHTML += `
+                    <div class="folder">
+                        <h3 onclick="toggleFolder(this)">${folder} 📁</h3>
+                        <span class="file-count">${data.movies[folder].length} files</span>
+                        <ul>${fileList}</ul>
+                    </div>
+                `;
+            });
+        }
+
+        function toggleFolder(header) {
+            let list = header.nextElementSibling.nextElementSibling;
+            list.style.display = (list.style.display === "block") ? "none" : "block";
+        }
+
+        function searchMovies() {
+            let input = document.getElementById("search").value.toLowerCase();
+            let folders = document.querySelectorAll(".folder");
+
+            folders.forEach(folder => {
+                let files = folder.querySelectorAll("li");
+                let found = false;
+
+                files.forEach(file => {
+                    if (file.textContent.toLowerCase().includes(input)) {
+                        file.style.display = "list-item";
+                        found = true;
+                    } else {
+                        file.style.display = "none";
+                    }
+                });
+
+                folder.style.display = found ? "block" : "none";
+            });
+        }
+
+        loadMovies();
+    </script>
+
+</body>
+</html>
