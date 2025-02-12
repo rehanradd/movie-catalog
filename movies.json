@@ -1,0 +1,85 @@
+{
+    "last_updated": "2025-02-12",
+    "movies": {
+        "Marvel Collection": [
+            "Iron Man (2008).mp4",
+            "The Incredible Hulk (2008).mkv",
+            "Thor (2011).mp4",
+            "Captain America The First Avenger (2011).mkv",
+            "[NEW] Spider-Man No Way Home (2021).mkv",
+            "Black Panther (2018).mkv",
+            "[NEW] Doctor Strange in the Multiverse of Madness (2022).mkv"
+        ],
+        "DC Movies": [
+            "Batman Begins (2005).mp4",
+            "The Dark Knight (2008).mkv",
+            "The Dark Knight Rises (2012).mp4",
+            "[NEW] The Batman (2022).mkv",
+            "Man of Steel (2013).mkv",
+            "Wonder Woman (2017).mkv",
+            "[NEW] The Flash (2023).mp4"
+        ],
+        "Hollywood Action": [
+            "Mad Max Fury Road (2015).mkv",
+            "John Wick (2014).mp4",
+            "[NEW] John Wick 4 (2023).mkv",
+            "Fast and Furious 7 (2015).mkv",
+            "Fast and Furious 9 (2021).mp4",
+            "Mission Impossible Fallout (2018).mkv",
+            "[NEW] Mission Impossible Dead Reckoning (2023).mkv"
+        ],
+        "Bollywood Hits": [
+            "Sholay (1975).mkv",
+            "Dilwale Dulhania Le Jayenge (1995).mp4",
+            "[NEW] Jawan (2023).mkv",
+            "Pathaan (2023).mp4",
+            "[NEW] Animal (2023).mkv",
+            "Kabir Singh (2019).mkv",
+            "Gully Boy (2019).mkv"
+        ],
+        "Korean Drama": [
+            "Crash Landing on You (2019).mp4",
+            "Squid Game (2021).mkv",
+            "[NEW] The Glory (2023).mp4",
+            "Vincenzo (2021).mkv",
+            "[NEW] Sweet Home Season 2 (2023).mkv",
+            "Itaewon Class (2020).mp4",
+            "My Name (2021).mkv"
+        ],
+        "Anime Movies": [
+            "Your Name (2016).mkv",
+            "A Silent Voice (2016).mp4",
+            "[NEW] Suzume (2023).mkv",
+            "Spirited Away (2001).mkv",
+            "Demon Slayer Mugen Train (2020).mp4",
+            "[NEW] Jujutsu Kaisen 0 (2021).mkv",
+            "One Piece Film Red (2022).mp4"
+        ],
+        "Horror Collection": [
+            "The Conjuring (2013).mkv",
+            "The Conjuring 2 (2016).mp4",
+            "[NEW] The Nun 2 (2023).mkv",
+            "IT Chapter 1 (2017).mkv",
+            "[NEW] IT Chapter 2 (2019).mp4",
+            "Annabelle Comes Home (2019).mkv",
+            "Insidious The Red Door (2023).mp4"
+        ],
+        "Pakistani Movies": [
+            "Bol (2011).mkv",
+            "Jawani Phir Nahi Ani (2015).mp4",
+            "[NEW] The Legend of Maula Jatt (2022).mkv",
+            "Superstar (2019).mp4",
+            "[NEW] London Nahi Jaunga (2023).mkv",
+            "Teefa in Trouble (2018).mkv"
+        ],
+        "TV Series": [
+            "Breaking Bad (2008) - Season 1-5",
+            "Game of Thrones (2011) - Season 1-8",
+            "[NEW] House of the Dragon (2022) - Season 1",
+            "Stranger Things (2016) - Season 1-4",
+            "[NEW] The Last of Us (2023) - Season 1",
+            "Money Heist (2017) - Season 1-5",
+            "Sherlock (2010) - Season 1-4"
+        ]
+    }
+}
