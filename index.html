@@ -6,17 +6,23 @@
     <title>Movie Catalog Pro</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* Modern Dark Theme Design System */
+        /* Modern App Design System */
         :root {
-            --primary: #7c3aed; /* Purple */
-            --secondary: #a78bfa; /* Light Purple */
-            --background: #111827; /* Dark Gray */
-            --surface: #1f2937; /* Darker Gray */
-            --text: #f9fafb; /* Light Gray */
-            --border: #374151; /* Dark Border */
-            --success: #34d399; /* Light Green */
-            --error: #f87171; /* Light Red */
+            --primary: #6366f1;
+            --secondary: #4f46e5;
+            --background: #ffffff;
+            --surface: #f8fafc;
+            --text: #1e293b;
+            --border: #e2e8f0;
+            --success: #22c55e;
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [data-theme="dark"] {
+            --background: #0f172a;
+            --surface: #1e293b;
+            --text: #f8fafc;
+            --border: #334155;
         }
 
         * {
@@ -45,17 +51,9 @@
             background: var(--surface);
             padding: 1.5rem;
             border-right: 1px solid var(--border);
-            position: fixed;
+            position: sticky;
             top: 0;
-            left: -280px; /* Hidden by default */
             height: 100vh;
-            overflow-y: auto;
-            transition: transform 0.3s ease-in-out;
-            z-index: 100;
-        }
-
-        .sidebar.active {
-            transform: translateX(280px); /* Show sidebar */
         }
 
         .brand {
@@ -74,47 +72,6 @@
             display: grid;
             place-items: center;
             color: white;
-        }
-
-        /* Watchlist Section */
-        .watchlist-section {
-            margin-top: 2rem;
-        }
-
-        .watchlist-section h3 {
-            margin-bottom: 1rem;
-            color: var(--text);
-        }
-
-        .watchlist-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-            padding: 8px;
-            border-radius: 8px;
-            background: var(--background);
-            margin-bottom: 8px;
-            transition: var(--transition);
-        }
-
-        .watchlist-item:hover {
-            background: var(--primary);
-            color: white;
-        }
-
-        .remove-btn {
-            background: var(--error);
-            border: none;
-            padding: 4px 8px;
-            border-radius: 4px;
-            color: white;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .remove-btn:hover {
-            background: #dc2626;
         }
 
         /* Main Content */
@@ -194,11 +151,6 @@
             gap: 4px;
         }
 
-        .file-size {
-            font-size: 0.9rem;
-            color: #9ca3af;
-        }
-
         /* Watchlist Button */
         .watchlist-btn {
             position: absolute;
@@ -224,12 +176,13 @@
             }
 
             .sidebar {
-                width: 280px;
-                transform: translateX(-280px);
-            }
-
-            .sidebar.active {
-                transform: translateX(0);
+                position: fixed;
+                width: 100%;
+                height: auto;
+                bottom: 0;
+                top: auto;
+                border-top: 1px solid var(--border);
+                z-index: 100;
             }
 
             .brand {
@@ -246,8 +199,8 @@
             }
         }
 
-        /* Menu Toggle Button */
-        .menu-toggle {
+        /* Dark Mode Toggle */
+        .theme-toggle {
             position: fixed;
             bottom: 2rem;
             right: 2rem;
@@ -257,14 +210,6 @@
             border-radius: 50%;
             cursor: pointer;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            z-index: 101;
-        }
-
-        /* Infinite Scroll Message */
-        .infinite-scroll-message {
-            text-align: center;
-            margin: 2rem 0;
-            color: var(--text);
         }
     </style>
 </head>
@@ -276,10 +221,10 @@
                 <div class="brand-icon">🎬</div>
                 <h1>Movie Pro</h1>
             </div>
-            <div class="watchlist-section">
-                <h3>Your Watchlist</h3>
-                <div id="watchlistItems"></div>
-            </div>
+            <button class="card" id="watchlistBtn">
+                📌 Your Watchlist
+                <span class="badge" id="watchlistCount">0 Saved</span>
+            </button>
         </aside>
 
         <!-- Main Content -->
@@ -295,12 +240,11 @@
             </div>
 
             <div class="grid" id="results"></div>
-            <div id="infiniteScrollMessage" class="infinite-scroll-message"></div>
         </main>
 
-        <!-- Menu Toggle -->
-        <button class="menu-toggle" id="menuToggle">
-            <i class="fas fa-bars"></i>
+        <!-- Theme Toggle -->
+        <button class="theme-toggle" id="darkModeToggle">
+            <i class="fas fa-moon"></i>
         </button>
     </div>
 
@@ -308,9 +252,6 @@
         let allItems = [];
         let watchlist = JSON.parse(localStorage.getItem('watchlist')) || [];
         let currentFolder = null;
-        let currentPage = 1;
-        const itemsPerPage = 20;
-        let isLoading = false;
 
         // Load movie data
         async function loadData() {
@@ -320,8 +261,8 @@
                 
                 const data = await response.json();
                 allItems = flattenData(data.root);
-                displayResults(allItems.slice(0, itemsPerPage)); // Load first page
-                updateWatchlist();
+                displayResults(allItems.slice(0, 50)); // Lazy load first 50 items
+                updateWatchlistCount();
             } catch (error) {
                 console.error('Error:', error);
                 document.getElementById('results').innerHTML = `
@@ -351,7 +292,6 @@
                     type: 'file',
                     name: `${file.name}${file.extension}`,
                     path: folder.path,
-                    size: file.size || 'N/A', // Add file size
                     is_new: file.is_new
                 })));
             }
@@ -393,7 +333,6 @@
                             <i class="fas fa-file-video" style="color:#4a90e2"></i>
                             <div>
                                 ${item.name}
-                                <div class="file-size">Size: ${item.size}</div>
                                 ${item.is_new ? '<span class="badge">NEW</span>' : ''}
                             </div>
                             <button class="watchlist-btn ${isInWatchlist ? 'saved' : ''}" 
@@ -406,33 +345,7 @@
                 }
             });
 
-            container.innerHTML += html; // Append new items
-            isLoading = false;
-        }
-
-        // Infinite scroll
-        window.addEventListener('scroll', () => {
-            const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
-            if (scrollTop + clientHeight >= scrollHeight - 10 && !isLoading) {
-                loadMoreData();
-            }
-        });
-
-        // Load more data
-        function loadMoreData() {
-            if (isLoading) return;
-            isLoading = true;
-
-            const start = currentPage * itemsPerPage;
-            const end = start + itemsPerPage;
-            const nextItems = allItems.slice(start, end);
-
-            if (nextItems.length > 0) {
-                displayResults(nextItems);
-                currentPage++;
-            } else {
-                document.getElementById('infiniteScrollMessage').textContent = 'No more items to load.';
-            }
+            container.innerHTML = html || `<div class="help-text">No results found</div>`;
         }
 
         // Open folder
@@ -449,7 +362,7 @@
         document.getElementById('backBtn').addEventListener('click', () => {
             currentFolder = null;
             document.getElementById('backBtn').style.display = 'none';
-            displayResults(allItems.slice(0, itemsPerPage));
+            displayResults(allItems.slice(0, 50));
         });
 
         // Toggle watchlist
@@ -461,43 +374,426 @@
                 watchlist.splice(index, 1);
             }
             localStorage.setItem('watchlist', JSON.stringify(watchlist));
-            updateWatchlist();
             document.querySelector(`button[data-movie="${movieName}"]`).classList.toggle('saved');
+            updateWatchlistCount();
         }
 
-        // Update watchlist
-        function updateWatchlist() {
-            const watchlistItems = document.getElementById('watchlistItems');
-            watchlistItems.innerHTML = watchlist.map(movie => `
-                <div class="watchlist-item">
-                    <i class="fas fa-file-video"></i>
-                    <span>${movie.name}</span>
-                    <button class="remove-btn" onclick="removeFromWatchlist('${movie.name}')">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            `).join('');
-        }
-
-        // Remove from watchlist
-        function removeFromWatchlist(movieName) {
-            watchlist = watchlist.filter(item => item.name !== movieName);
-            localStorage.setItem('watchlist', JSON.stringify(watchlist));
-            updateWatchlist();
-            document.querySelector(`button[data-movie="${movieName}"]`)?.classList.remove('saved');
+        // Update watchlist count
+        function updateWatchlistCount() {
+            document.getElementById('watchlistCount').textContent = `${watchlist.length} Saved`;
         }
 
         // Search functionality
         document.getElementById('search').addEventListener('input', function () {
             const query = this.value.toLowerCase();
             const filtered = allItems.filter(item => item.name.toLowerCase().includes(query));
-            document.getElementById('results').innerHTML = ''; // Clear previous results
-            displayResults(filtered.slice(0, itemsPerPage));
+            displayResults(filtered.slice(0, 50));
         });
 
-        // Menu toggle
-        document.getElementById('menuToggle').addEventListener('click', () => {
-            document.querySelector('.sidebar').classList.toggle('active');
+        // Dark mode toggle
+        document.getElementById('darkModeToggle').addEventListener('click', () => {
+            document.body.dataset.theme = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
+        });
+
+        // Initial load
+        loadData();
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Catalog Pro</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Modern App Design System */
+        :root {
+            --primary: #6366f1;
+            --secondary: #4f46e5;
+            --background: #ffffff;
+            --surface: #f8fafc;
+            --text: #1e293b;
+            --border: #e2e8f0;
+            --success: #22c55e;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [data-theme="dark"] {
+            --background: #0f172a;
+            --surface: #1e293b;
+            --text: #f8fafc;
+            --border: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui;
+            background: var(--background);
+            color: var(--text);
+            line-height: 1.6;
+            transition: var(--transition);
+        }
+
+        /* App Layout */
+        .app-container {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: var(--surface);
+            padding: 1.5rem;
+            border-right: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            height: 100vh;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 2rem;
+            padding: 0.5rem;
+        }
+
+        .brand-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            border-radius: 8px;
+            display: grid;
+            place-items: center;
+            color: white;
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Search Bar */
+        .search-container {
+            position: sticky;
+            top: 0;
+            background: var(--background);
+            padding: 1rem 0;
+            z-index: 10;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 1rem;
+            background: var(--surface);
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        #search {
+            flex: 1;
+            border: none;
+            background: transparent;
+            color: var(--text);
+            font-size: 1rem;
+        }
+
+        /* Grid Layout */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            transition: var(--transition);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .card.folder {
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        .badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: var(--success);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Watchlist Button */
+        .watchlist-btn {
+            position: absolute;
+            bottom: 1rem;
+            right: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            color: inherit;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .watchlist-btn.saved {
+            background: var(--success);
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: fixed;
+                width: 100%;
+                height: auto;
+                bottom: 0;
+                top: auto;
+                border-top: 1px solid var(--border);
+                z-index: 100;
+            }
+
+            .brand {
+                display: none;
+            }
+
+            .main-content {
+                padding: 1rem;
+                margin-bottom: 80px;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Dark Mode Toggle */
+        .theme-toggle {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 1rem;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon">🎬</div>
+                <h1>Movie Pro</h1>
+            </div>
+            <button class="card" id="watchlistBtn">
+                📌 Your Watchlist
+                <span class="badge" id="watchlistCount">0 Saved</span>
+            </button>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="search-container">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="search" placeholder="Search 10,000+ movies...">
+                </div>
+                <button class="back-btn" id="backBtn" style="display: none;">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+            </div>
+
+            <div class="grid" id="results"></div>
+        </main>
+
+        <!-- Theme Toggle -->
+        <button class="theme-toggle" id="darkModeToggle">
+            <i class="fas fa-moon"></i>
+        </button>
+    </div>
+
+    <script>
+        let allItems = [];
+        let watchlist = JSON.parse(localStorage.getItem('watchlist')) || [];
+        let currentFolder = null;
+
+        // Load movie data
+        async function loadData() {
+            try {
+                const response = await fetch('movies.json');
+                if (!response.ok) throw new Error('Failed to load data');
+                
+                const data = await response.json();
+                allItems = flattenData(data.root);
+                displayResults(allItems.slice(0, 50)); // Lazy load first 50 items
+                updateWatchlistCount();
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('results').innerHTML = `
+                    <div class="error-message">Failed to load movie data. Please try again later.</div>
+                `;
+            }
+        }
+
+        // Flatten nested structure
+        function flattenData(folder) {
+            let items = [];
+            
+            // Add folder info
+            items.push({
+                type: 'folder',
+                name: folder.name,
+                path: folder.path,
+                file_count: folder.file_count,
+                is_updated: folder.files.some(file => file.is_new),
+                files: folder.files,
+                subfolders: folder.subfolders
+            });
+
+            // Add files
+            if (folder.files && folder.files.length > 0) {
+                items.push(...folder.files.map(file => ({
+                    type: 'file',
+                    name: `${file.name}${file.extension}`,
+                    path: folder.path,
+                    is_new: file.is_new
+                })));
+            }
+
+            // Process subfolders
+            if (folder.subfolders) {
+                Object.values(folder.subfolders).forEach(subfolder => {
+                    items.push(...flattenData(subfolder));
+                });
+            }
+
+            return items;
+        }
+
+        // Display results
+        function displayResults(items) {
+            const container = document.getElementById('results');
+            let html = '';
+
+            items.forEach(item => {
+                if (item.type === 'folder') {
+                    html += `
+                        <div class="card folder ${item.is_updated ? 'updated-folder' : ''}" onclick="openFolder('${item.name}')">
+                            <div class="folder-header">
+                                <i class="fas fa-folder"></i>
+                                <div>
+                                    <strong>${item.name}</strong>
+                                    <span style="color:#666; font-size:0.9em">
+                                        (${item.file_count} files)
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    const isInWatchlist = watchlist.some(movie => movie.name === item.name);
+                    html += `
+                        <div class="card file-item">
+                            <i class="fas fa-file-video" style="color:#4a90e2"></i>
+                            <div>
+                                ${item.name}
+                                ${item.is_new ? '<span class="badge">NEW</span>' : ''}
+                            </div>
+                            <button class="watchlist-btn ${isInWatchlist ? 'saved' : ''}" 
+                                    data-movie="${item.name}" 
+                                    onclick="toggleWatchlist('${item.name}')">
+                                ${isInWatchlist ? 'Saved' : 'Save'}
+                            </button>
+                        </div>
+                    `;
+                }
+            });
+
+            container.innerHTML = html || `<div class="help-text">No results found</div>`;
+        }
+
+        // Open folder
+        function openFolder(folderName) {
+            const folder = allItems.find(item => item.name === folderName && item.type === 'folder');
+            if (!folder) return;
+
+            currentFolder = folder;
+            document.getElementById('backBtn').style.display = 'block';
+            displayResults([...folder.files, ...Object.values(folder.subfolders)]);
+        }
+
+        // Back button
+        document.getElementById('backBtn').addEventListener('click', () => {
+            currentFolder = null;
+            document.getElementById('backBtn').style.display = 'none';
+            displayResults(allItems.slice(0, 50));
+        });
+
+        // Toggle watchlist
+        function toggleWatchlist(movieName) {
+            const index = watchlist.findIndex(item => item.name === movieName);
+            if (index === -1) {
+                watchlist.push({ name: movieName });
+            } else {
+                watchlist.splice(index, 1);
+            }
+            localStorage.setItem('watchlist', JSON.stringify(watchlist));
+            document.querySelector(`button[data-movie="${movieName}"]`).classList.toggle('saved');
+            updateWatchlistCount();
+        }
+
+        // Update watchlist count
+        function updateWatchlistCount() {
+            document.getElementById('watchlistCount').textContent = `${watchlist.length} Saved`;
+        }
+
+        // Search functionality
+        document.getElementById('search').addEventListener('input', function () {
+            const query = this.value.toLowerCase();
+            const filtered = allItems.filter(item => item.name.toLowerCase().includes(query));
+            displayResults(filtered.slice(0, 50));
+        });
+
+        // Dark mode toggle
+        document.getElementById('darkModeToggle').addEventListener('click', () => {
+            document.body.dataset.theme = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
         });
 
         // Initial load
