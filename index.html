@@ -248,155 +248,115 @@
         </button>
     </div>
 
-    <script>
-        let allItems = [];
-        let watchlist = JSON.parse(localStorage.getItem('watchlist')) || [];
-        let currentFolder = null;
+<script>
+    let allItems = [];
+    let watchlist = JSON.parse(localStorage.getItem("watchlist")) || [];
+    let currentFolder = null;
 
-        // Load movie data
-        async function loadData() {
-            try {
-                const response = await fetch('movies.json');
-                if (!response.ok) throw new Error('Failed to load data');
-                
-                const data = await response.json();
-                allItems = flattenData(data.root);
-                displayResults(allItems.slice(0, 50)); // Lazy load first 50 items
-                updateWatchlistCount();
-            } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('results').innerHTML = `
-                    <div class="error-message">Failed to load movie data. Please try again later.</div>
-                `;
-            }
+    // Load movie data
+    async function loadData() {
+        try {
+            const response = await fetch("movies.json");
+            if (!response.ok) throw new Error("Failed to load data");
+
+            const data = await response.json();
+            allItems = flattenData(data.root);
+            displayItems(allItems);
+        } catch (error) {
+            console.error("Error loading data:", error);
         }
+    }
 
-        // Flatten nested structure
-        function flattenData(folder) {
-            let items = [];
-            
-            // Add folder info
-            items.push({
-                type: 'folder',
-                name: folder.name,
-                path: folder.path,
-                file_count: folder.file_count,
-                is_updated: folder.files.some(file => file.is_new),
-                files: folder.files,
-                subfolders: folder.subfolders
-            });
-
-            // Add files
-            if (folder.files && folder.files.length > 0) {
-                items.push(...folder.files.map(file => ({
-                    type: 'file',
-                    name: `${file.name}${file.extension}`,
-                    path: folder.path,
-                    is_new: file.is_new
-                })));
+    // Flatten nested folders
+    function flattenData(items, parent = "") {
+        return items.flatMap((item) => {
+            const path = parent ? `${parent} / ${item.name}` : item.name;
+            if (item.type === "folder") {
+                return [{ ...item, path }, ...flattenData(item.children || [], path)];
             }
+            return { ...item, path };
+        });
+    }
 
-            // Process subfolders
-            if (folder.subfolders) {
-                Object.values(folder.subfolders).forEach(subfolder => {
-                    items.push(...flattenData(subfolder));
+    // Display movies and folders
+    function displayItems(items) {
+        const resultsContainer = document.getElementById("results");
+        resultsContainer.innerHTML = "";
+
+        items.forEach((item) => {
+            const card = document.createElement("div");
+            card.classList.add("card");
+            if (item.type === "folder") card.classList.add("folder");
+
+            card.innerHTML = `
+                <h3>${item.name}</h3>
+                ${item.type === "movie" ? `<button class="watchlist-btn ${watchlist.includes(item.name) ? "saved" : ""}" data-name="${item.name}">${watchlist.includes(item.name) ? "✅ Saved" : "➕ Add"}</button>` : ""}
+            `;
+
+            if (item.type === "folder") {
+                card.addEventListener("click", () => openFolder(item.name));
+            } else {
+                card.querySelector(".watchlist-btn").addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    toggleWatchlist(item.name, e.target);
                 });
             }
 
-            return items;
-        }
-
-        // Display results
-        function displayResults(items) {
-            const container = document.getElementById('results');
-            let html = '';
-
-            items.forEach(item => {
-                if (item.type === 'folder') {
-                    html += `
-                        <div class="card folder ${item.is_updated ? 'updated-folder' : ''}" onclick="openFolder('${item.name}')">
-                            <div class="folder-header">
-                                <i class="fas fa-folder"></i>
-                                <div>
-                                    <strong>${item.name}</strong>
-                                    <span style="color:#666; font-size:0.9em">
-                                        (${item.file_count} files)
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    const isInWatchlist = watchlist.some(movie => movie.name === item.name);
-                    html += `
-                        <div class="card file-item">
-                            <i class="fas fa-file-video" style="color:#4a90e2"></i>
-                            <div>
-                                ${item.name}
-                                ${item.is_new ? '<span class="badge">NEW</span>' : ''}
-                            </div>
-                            <button class="watchlist-btn ${isInWatchlist ? 'saved' : ''}" 
-                                    data-movie="${item.name}" 
-                                    onclick="toggleWatchlist('${item.name}')">
-                                ${isInWatchlist ? 'Saved' : 'Save'}
-                            </button>
-                        </div>
-                    `;
-                }
-            });
-
-            container.innerHTML = html || `<div class="help-text">No results found</div>`;
-        }
-
-        // Open folder
-        function openFolder(folderName) {
-            const folder = allItems.find(item => item.name === folderName && item.type === 'folder');
-            if (!folder) return;
-
-            currentFolder = folder;
-            document.getElementById('backBtn').style.display = 'block';
-            displayResults([...folder.files, ...Object.values(folder.subfolders)]);
-        }
-
-        // Back button
-        document.getElementById('backBtn').addEventListener('click', () => {
-            currentFolder = null;
-            document.getElementById('backBtn').style.display = 'none';
-            displayResults(allItems.slice(0, 50));
+            resultsContainer.appendChild(card);
         });
 
-        // Toggle watchlist
-        function toggleWatchlist(movieName) {
-            const index = watchlist.findIndex(item => item.name === movieName);
-            if (index === -1) {
-                watchlist.push({ name: movieName });
-            } else {
-                watchlist.splice(index, 1);
-            }
-            localStorage.setItem('watchlist', JSON.stringify(watchlist));
-            document.querySelector(`button[data-movie="${movieName}"]`).classList.toggle('saved');
-            updateWatchlistCount();
+        document.getElementById("backBtn").style.display = currentFolder ? "block" : "none";
+    }
+
+    // Open a folder
+    function openFolder(folderName) {
+        currentFolder = folderName;
+        const filteredItems = allItems.filter((item) => item.path.startsWith(folderName) && item.path !== folderName);
+        displayItems(filteredItems);
+    }
+
+    // Go back to root
+    document.getElementById("backBtn").addEventListener("click", () => {
+        currentFolder = null;
+        displayItems(allItems);
+    });
+
+    // Search movies
+    document.getElementById("search").addEventListener("input", (e) => {
+        const query = e.target.value.toLowerCase();
+        const filtered = allItems.filter((item) => item.name.toLowerCase().includes(query));
+        displayItems(filtered);
+    });
+
+    // Toggle watchlist
+    function toggleWatchlist(movieName, button) {
+        if (watchlist.includes(movieName)) {
+            watchlist = watchlist.filter((name) => name !== movieName);
+            button.classList.remove("saved");
+            button.textContent = "➕ Add";
+        } else {
+            watchlist.push(movieName);
+            button.classList.add("saved");
+            button.textContent = "✅ Saved";
         }
+        localStorage.setItem("watchlist", JSON.stringify(watchlist));
+        updateWatchlistCount();
+    }
 
-        // Update watchlist count
-        function updateWatchlistCount() {
-            document.getElementById('watchlistCount').textContent = `${watchlist.length} Saved`;
-        }
+    // Update watchlist count
+    function updateWatchlistCount() {
+        document.getElementById("watchlistCount").textContent = `${watchlist.length} Saved`;
+    }
 
-        // Search functionality
-        document.getElementById('search').addEventListener('input', function () {
-            const query = this.value.toLowerCase();
-            const filtered = allItems.filter(item => item.name.toLowerCase().includes(query));
-            displayResults(filtered.slice(0, 50));
-        });
+    // Dark mode toggle
+    document.getElementById("darkModeToggle").addEventListener("click", () => {
+        document.body.dataset.theme = document.body.dataset.theme === "dark" ? "light" : "dark";
+    });
 
-        // Dark mode toggle
-        document.getElementById('darkModeToggle').addEventListener('click', () => {
-            document.body.dataset.theme = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
-        });
+    // Initialize app
+    updateWatchlistCount();
+    loadData();
+</script>
 
-        // Initial load
-        loadData();
-    </script>
 </body>
 </html>
