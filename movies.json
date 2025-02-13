@@ -1,23 +1,887 @@
 {
-  "last_updated": "2024-03-15 21:00:00",
-  "root": {
-    "name": "Movies",
-    "path": "/",
-    "file_count": 5,
-    "files": [
-      {"name": "Sample Movie 1", "extension": ".mp4", "is_new": true},
-      {"name": "Sample Movie 2", "extension": ".mkv", "is_new": false}
-    ],
-    "subfolders": {
-      "Action": {
-        "name": "Action",
-        "path": "/Action",
+    "root": {
+        "name": "Folder 20",
+        "path": "/movies/folder_70",
         "file_count": 3,
         "files": [
-          {"name": "Action Movie 1", "extension": ".avi", "is_new": true}
+            {
+                "name": "Gladiator (2020)",
+                "extension": ".avi",
+                "is_new": true
+            },
+            {
+                "name": "Jurassic Park (2006)",
+                "extension": ".avi",
+                "is_new": false
+            },
+            {
+                "name": "Spider-Man (2020)",
+                "extension": ".avi",
+                "is_new": true
+            },
+            {
+                "name": "The Dark Knight (2006)",
+                "extension": ".mp4",
+                "is_new": false
+            },
+            {
+                "name": "The Dark Knight (2021)",
+                "extension": ".mp4",
+                "is_new": false
+            }
         ],
-        "subfolders": {}
-      }
+        "subfolders": {
+            "Folder 8": {
+                "name": "Folder 8",
+                "path": "/movies/folder_60",
+                "file_count": 10,
+                "files": [
+                    {
+                        "name": "Interstellar (2011)",
+                        "extension": ".mp4",
+                        "is_new": false
+                    },
+                    {
+                        "name": "Forrest Gump (2013)",
+                        "extension": ".mkv",
+                        "is_new": false
+                    }
+                ],
+                "subfolders": {
+                    "Folder 20": {
+                        "name": "Folder 20",
+                        "path": "/movies/folder_27",
+                        "file_count": 3,
+                        "files": [
+                            {
+                                "name": "Inception (2023)",
+                                "extension": ".mp4",
+                                "is_new": false
+                            },
+                            {
+                                "name": "The Dark Knight (2001)",
+                                "extension": ".avi",
+                                "is_new": false
+                            },
+                            {
+                                "name": "Avengers (2001)",
+                                "extension": ".mkv",
+                                "is_new": true
+                            },
+                            {
+                                "name": "Jurassic Park (1994)",
+                                "extension": ".mkv",
+                                "is_new": false
+                            },
+                            {
+                                "name": "Forrest Gump (1999)",
+                                "extension": ".avi",
+                                "is_new": false
+                            },
+                            {
+                                "name": "Avengers (2018)",
+                                "extension": ".mkv",
+                                "is_new": false
+                            },
+                            {
+                                "name": "Titanic (2006)",
+                                "extension": ".avi",
+                                "is_new": false
+                            },
+                            {
+                                "name": "Avengers (1991)",
+                                "extension": ".mp4",
+                                "is_new": true
+                            }
+                        ],
+                        "subfolders": {
+                            "Folder 9": {
+                                "name": "Folder 9",
+                                "path": "/movies/folder_28",
+                                "file_count": 6,
+                                "files": [
+                                    {
+                                        "name": "Gladiator (2010)",
+                                        "extension": ".mp4",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "The Matrix (1999)",
+                                        "extension": ".avi",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "The Dark Knight (2002)",
+                                        "extension": ".mp4",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "Inception (2003)",
+                                        "extension": ".avi",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "Titanic (1996)",
+                                        "extension": ".avi",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "The Dark Knight (2007)",
+                                        "extension": ".mp4",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "Titanic (2006)",
+                                        "extension": ".mkv",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "Jurassic Park (1997)",
+                                        "extension": ".mp4",
+                                        "is_new": false
+                                    }
+                                ],
+                                "subfolders": {}
+                            },
+                            "Folder 32": {
+                                "name": "Folder 32",
+                                "path": "/movies/folder_66",
+                                "file_count": 10,
+                                "files": [
+                                    {
+                                        "name": "Forrest Gump (2024)",
+                                        "extension": ".avi",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "Spider-Man (1992)",
+                                        "extension": ".mp4",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "Spider-Man (2012)",
+                                        "extension": ".mp4",
+                                        "is_new": false
+                                    }
+                                ],
+                                "subfolders": {}
+                            },
+                            "Folder 31": {
+                                "name": "Folder 31",
+                                "path": "/movies/folder_54",
+                                "file_count": 8,
+                                "files": [
+                                    {
+                                        "name": "Forrest Gump (2024)",
+                                        "extension": ".avi",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "Inception (2001)",
+                                        "extension": ".mp4",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "Titanic (2009)",
+                                        "extension": ".mkv",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "The Dark Knight (2001)",
+                                        "extension": ".mkv",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "The Matrix (1993)",
+                                        "extension": ".mkv",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "Titanic (2012)",
+                                        "extension": ".mp4",
+                                        "is_new": true
+                                    }
+                                ],
+                                "subfolders": {}
+                            }
+                        }
+                    },
+                    "Folder 90": {
+                        "name": "Folder 90",
+                        "path": "/movies/folder_30",
+                        "file_count": 8,
+                        "files": [
+                            {
+                                "name": "The Matrix (2002)",
+                                "extension": ".avi",
+                                "is_new": false
+                            },
+                            {
+                                "name": "Avengers (2010)",
+                                "extension": ".mp4",
+                                "is_new": true
+                            },
+                            {
+                                "name": "The Matrix (1996)",
+                                "extension": ".avi",
+                                "is_new": true
+                            },
+                            {
+                                "name": "Inception (2018)",
+                                "extension": ".mp4",
+                                "is_new": false
+                            },
+                            {
+                                "name": "Avengers (1996)",
+                                "extension": ".avi",
+                                "is_new": true
+                            },
+                            {
+                                "name": "The Matrix (2008)",
+                                "extension": ".mp4",
+                                "is_new": false
+                            },
+                            {
+                                "name": "Avengers (2004)",
+                                "extension": ".mkv",
+                                "is_new": true
+                            }
+                        ],
+                        "subfolders": {
+                            "Folder 1": {
+                                "name": "Folder 1",
+                                "path": "/movies/folder_43",
+                                "file_count": 10,
+                                "files": [
+                                    {
+                                        "name": "The Matrix (2008)",
+                                        "extension": ".mp4",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "Jurassic Park (2019)",
+                                        "extension": ".mkv",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "Titanic (2010)",
+                                        "extension": ".avi",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "Spider-Man (2008)",
+                                        "extension": ".avi",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "Titanic (2005)",
+                                        "extension": ".avi",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "The Matrix (2010)",
+                                        "extension": ".avi",
+                                        "is_new": false
+                                    }
+                                ],
+                                "subfolders": {}
+                            }
+                        }
+                    }
+                }
+            },
+            "Folder 12": {
+                "name": "Folder 12",
+                "path": "/movies/folder_8",
+                "file_count": 5,
+                "files": [
+                    {
+                        "name": "Jurassic Park (1995)",
+                        "extension": ".avi",
+                        "is_new": false
+                    },
+                    {
+                        "name": "Titanic (1994)",
+                        "extension": ".mp4",
+                        "is_new": false
+                    },
+                    {
+                        "name": "Interstellar (1992)",
+                        "extension": ".mkv",
+                        "is_new": false
+                    }
+                ],
+                "subfolders": {
+                    "Folder 96": {
+                        "name": "Folder 96",
+                        "path": "/movies/folder_77",
+                        "file_count": 9,
+                        "files": [
+                            {
+                                "name": "Avengers (2014)",
+                                "extension": ".avi",
+                                "is_new": false
+                            },
+                            {
+                                "name": "Interstellar (2000)",
+                                "extension": ".mkv",
+                                "is_new": true
+                            },
+                            {
+                                "name": "Interstellar (1999)",
+                                "extension": ".avi",
+                                "is_new": true
+                            },
+                            {
+                                "name": "Gladiator (1997)",
+                                "extension": ".mp4",
+                                "is_new": false
+                            },
+                            {
+                                "name": "The Dark Knight (2003)",
+                                "extension": ".mp4",
+                                "is_new": false
+                            },
+                            {
+                                "name": "Gladiator (2013)",
+                                "extension": ".avi",
+                                "is_new": true
+                            },
+                            {
+                                "name": "Avengers (2014)",
+                                "extension": ".mkv",
+                                "is_new": true
+                            }
+                        ],
+                        "subfolders": {
+                            "Folder 97": {
+                                "name": "Folder 97",
+                                "path": "/movies/folder_53",
+                                "file_count": 7,
+                                "files": [
+                                    {
+                                        "name": "Gladiator (2017)",
+                                        "extension": ".mkv",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "Avengers (2019)",
+                                        "extension": ".mkv",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "The Dark Knight (1991)",
+                                        "extension": ".mp4",
+                                        "is_new": false
+                                    }
+                                ],
+                                "subfolders": {}
+                            },
+                            "Folder 19": {
+                                "name": "Folder 19",
+                                "path": "/movies/folder_20",
+                                "file_count": 5,
+                                "files": [
+                                    {
+                                        "name": "Jurassic Park (1995)",
+                                        "extension": ".avi",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "Avengers (2003)",
+                                        "extension": ".mp4",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "Interstellar (2002)",
+                                        "extension": ".mp4",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "The Dark Knight (2025)",
+                                        "extension": ".avi",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "The Matrix (1994)",
+                                        "extension": ".avi",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "Gladiator (1995)",
+                                        "extension": ".mkv",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "Titanic (2019)",
+                                        "extension": ".mkv",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "The Dark Knight (2007)",
+                                        "extension": ".mp4",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "Gladiator (1994)",
+                                        "extension": ".avi",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "Spider-Man (1999)",
+                                        "extension": ".avi",
+                                        "is_new": true
+                                    }
+                                ],
+                                "subfolders": {}
+                            },
+                            "Folder 6": {
+                                "name": "Folder 6",
+                                "path": "/movies/folder_75",
+                                "file_count": 10,
+                                "files": [
+                                    {
+                                        "name": "Inception (1996)",
+                                        "extension": ".mkv",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "The Matrix (2025)",
+                                        "extension": ".mp4",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "Interstellar (2010)",
+                                        "extension": ".mkv",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "Titanic (2015)",
+                                        "extension": ".mp4",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "The Matrix (2024)",
+                                        "extension": ".mp4",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "The Dark Knight (2007)",
+                                        "extension": ".mkv",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "Interstellar (1999)",
+                                        "extension": ".avi",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "Gladiator (2021)",
+                                        "extension": ".mkv",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "Inception (2022)",
+                                        "extension": ".mkv",
+                                        "is_new": true
+                                    }
+                                ],
+                                "subfolders": {}
+                            }
+                        }
+                    },
+                    "Folder 59": {
+                        "name": "Folder 59",
+                        "path": "/movies/folder_20",
+                        "file_count": 1,
+                        "files": [
+                            {
+                                "name": "Forrest Gump (2006)",
+                                "extension": ".mkv",
+                                "is_new": true
+                            },
+                            {
+                                "name": "Spider-Man (2023)",
+                                "extension": ".avi",
+                                "is_new": true
+                            },
+                            {
+                                "name": "The Matrix (2018)",
+                                "extension": ".mp4",
+                                "is_new": false
+                            },
+                            {
+                                "name": "Jurassic Park (1994)",
+                                "extension": ".mp4",
+                                "is_new": true
+                            },
+                            {
+                                "name": "Inception (2022)",
+                                "extension": ".mp4",
+                                "is_new": false
+                            },
+                            {
+                                "name": "Jurassic Park (2014)",
+                                "extension": ".mkv",
+                                "is_new": false
+                            }
+                        ],
+                        "subfolders": {
+                            "Folder 13": {
+                                "name": "Folder 13",
+                                "path": "/movies/folder_27",
+                                "file_count": 7,
+                                "files": [
+                                    {
+                                        "name": "Jurassic Park (1990)",
+                                        "extension": ".mkv",
+                                        "is_new": true
+                                    }
+                                ],
+                                "subfolders": {}
+                            },
+                            "Folder 91": {
+                                "name": "Folder 91",
+                                "path": "/movies/folder_36",
+                                "file_count": 5,
+                                "files": [
+                                    {
+                                        "name": "The Dark Knight (1998)",
+                                        "extension": ".mkv",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "The Matrix (2019)",
+                                        "extension": ".mkv",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "Spider-Man (2012)",
+                                        "extension": ".mp4",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "Inception (2016)",
+                                        "extension": ".mkv",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "Inception (2007)",
+                                        "extension": ".mp4",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "Spider-Man (2005)",
+                                        "extension": ".mkv",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "Jurassic Park (2013)",
+                                        "extension": ".mp4",
+                                        "is_new": false
+                                    }
+                                ],
+                                "subfolders": {}
+                            },
+                            "Folder 92": {
+                                "name": "Folder 92",
+                                "path": "/movies/folder_35",
+                                "file_count": 5,
+                                "files": [
+                                    {
+                                        "name": "The Dark Knight (2015)",
+                                        "extension": ".mp4",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "Inception (2000)",
+                                        "extension": ".avi",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "Avengers (2003)",
+                                        "extension": ".mkv",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "Gladiator (2008)",
+                                        "extension": ".avi",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "Gladiator (1990)",
+                                        "extension": ".avi",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "Titanic (2016)",
+                                        "extension": ".mkv",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "The Dark Knight (2004)",
+                                        "extension": ".avi",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "Titanic (1999)",
+                                        "extension": ".mkv",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "The Dark Knight (2019)",
+                                        "extension": ".mp4",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "Forrest Gump (2015)",
+                                        "extension": ".mp4",
+                                        "is_new": false
+                                    }
+                                ],
+                                "subfolders": {}
+                            }
+                        }
+                    },
+                    "Folder 67": {
+                        "name": "Folder 67",
+                        "path": "/movies/folder_32",
+                        "file_count": 9,
+                        "files": [
+                            {
+                                "name": "Inception (1990)",
+                                "extension": ".mp4",
+                                "is_new": true
+                            },
+                            {
+                                "name": "Interstellar (2015)",
+                                "extension": ".mkv",
+                                "is_new": true
+                            },
+                            {
+                                "name": "Inception (1990)",
+                                "extension": ".avi",
+                                "is_new": true
+                            }
+                        ],
+                        "subfolders": {
+                            "Folder 71": {
+                                "name": "Folder 71",
+                                "path": "/movies/folder_69",
+                                "file_count": 8,
+                                "files": [
+                                    {
+                                        "name": "Jurassic Park (2021)",
+                                        "extension": ".mp4",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "Interstellar (2017)",
+                                        "extension": ".mkv",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "The Dark Knight (2011)",
+                                        "extension": ".avi",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "The Dark Knight (2001)",
+                                        "extension": ".avi",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "Inception (2012)",
+                                        "extension": ".mp4",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "Gladiator (1990)",
+                                        "extension": ".mp4",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "Titanic (2004)",
+                                        "extension": ".mkv",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "Jurassic Park (2016)",
+                                        "extension": ".avi",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "Jurassic Park (2011)",
+                                        "extension": ".mp4",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "Forrest Gump (2007)",
+                                        "extension": ".mkv",
+                                        "is_new": true
+                                    }
+                                ],
+                                "subfolders": {}
+                            },
+                            "Folder 66": {
+                                "name": "Folder 66",
+                                "path": "/movies/folder_92",
+                                "file_count": 6,
+                                "files": [
+                                    {
+                                        "name": "Gladiator (1997)",
+                                        "extension": ".mp4",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "Inception (2010)",
+                                        "extension": ".avi",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "Titanic (2022)",
+                                        "extension": ".avi",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "Titanic (2003)",
+                                        "extension": ".mkv",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "Gladiator (2002)",
+                                        "extension": ".mp4",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "Forrest Gump (1997)",
+                                        "extension": ".avi",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "Inception (2004)",
+                                        "extension": ".mkv",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "Titanic (2003)",
+                                        "extension": ".avi",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "Inception (2009)",
+                                        "extension": ".mkv",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "Jurassic Park (1990)",
+                                        "extension": ".avi",
+                                        "is_new": true
+                                    }
+                                ],
+                                "subfolders": {}
+                            }
+                        }
+                    },
+                    "Folder 78": {
+                        "name": "Folder 78",
+                        "path": "/movies/folder_41",
+                        "file_count": 7,
+                        "files": [
+                            {
+                                "name": "The Matrix (2016)",
+                                "extension": ".mkv",
+                                "is_new": false
+                            },
+                            {
+                                "name": "Avengers (1996)",
+                                "extension": ".avi",
+                                "is_new": true
+                            },
+                            {
+                                "name": "The Matrix (2009)",
+                                "extension": ".mp4",
+                                "is_new": false
+                            },
+                            {
+                                "name": "The Matrix (1997)",
+                                "extension": ".avi",
+                                "is_new": false
+                            },
+                            {
+                                "name": "Titanic (2016)",
+                                "extension": ".mkv",
+                                "is_new": true
+                            },
+                            {
+                                "name": "Forrest Gump (1991)",
+                                "extension": ".mp4",
+                                "is_new": false
+                            },
+                            {
+                                "name": "Gladiator (2011)",
+                                "extension": ".mkv",
+                                "is_new": true
+                            },
+                            {
+                                "name": "Forrest Gump (2005)",
+                                "extension": ".avi",
+                                "is_new": false
+                            }
+                        ],
+                        "subfolders": {
+                            "Folder 94": {
+                                "name": "Folder 94",
+                                "path": "/movies/folder_49",
+                                "file_count": 8,
+                                "files": [
+                                    {
+                                        "name": "Titanic (2005)",
+                                        "extension": ".mkv",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "Titanic (1997)",
+                                        "extension": ".avi",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "Titanic (1995)",
+                                        "extension": ".avi",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "The Dark Knight (1997)",
+                                        "extension": ".mkv",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "Jurassic Park (2011)",
+                                        "extension": ".mp4",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "Forrest Gump (2015)",
+                                        "extension": ".mp4",
+                                        "is_new": false
+                                    },
+                                    {
+                                        "name": "The Dark Knight (1995)",
+                                        "extension": ".mp4",
+                                        "is_new": true
+                                    },
+                                    {
+                                        "name": "Jurassic Park (2015)",
+                                        "extension": ".mkv",
+                                        "is_new": false
+                                    }
+                                ],
+                                "subfolders": {}
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
-  }
 }
