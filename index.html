@@ -1,182 +1,211 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Simple Movie Finder</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Catalog</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* Simplified UI Styles */
+        /* Improved Responsive Design */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
             font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
+            line-height: 1.6;
             padding: 20px;
-            background: #f5f5f5;
+            background: #f0f2f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
         .search-box {
-            background: white;
+            background: #fff;
             padding: 20px;
             border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             margin-bottom: 20px;
         }
 
         #search {
             width: 100%;
-            padding: 15px;
-            font-size: 18px;
+            padding: 12px 20px;
+            font-size: 16px;
             border: 2px solid #ddd;
-            border-radius: 5px;
+            border-radius: 25px;
+            outline: none;
         }
 
-        .folder {
-            background: white;
-            margin: 10px 0;
-            border-radius: 5px;
-            padding: 15px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-        .folder-header {
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        #results {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
         }
 
         .file-item {
-            padding: 8px 15px;
-            margin: 5px 0;
-            background: #f8f9fa;
-            border-radius: 3px;
-            display: flex;
-            gap: 10px;
-            align-items: center;
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .new-badge {
             background: #28a745;
             color: white;
-            padding: 2px 8px;
-            border-radius: 3px;
+            padding: 3px 8px;
+            border-radius: 4px;
             font-size: 0.8em;
+            margin-left: 10px;
         }
 
-        .help-text {
-            color: #666;
-            margin: 20px 0;
+        .error-message {
+            color: #dc3545;
             text-align: center;
+            padding: 20px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            #results {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="search-box">
-        <h1>🎥 Movie Finder</h1>
-        <input type="text" id="search" placeholder="Type any movie or folder name...">
-        <div class="help-text">(You can type even part of the name - we'll find it!)</div>
+    <div class="container">
+        <div class="search-box">
+            <h1 style="margin-bottom: 15px; color: #1a1a1a;">🎬 Movie Catalog</h1>
+            <input type="text" id="search" placeholder="Search movies or folders...">
+        </div>
+        <div id="results"></div>
     </div>
 
-    <div id="results"></div>
-
-    <!-- Include Fuse.js for fuzzy search -->
+    <!-- Include Fuse.js -->
     <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
     <script>
+        // Initialize Fuse.js
         let fuse;
         let allItems = [];
 
-        // Load movie data
-        fetch('movies.json')
-            .then(res => res.json())
-            .then(data => {
-                // 1. Prepare search data
-                const flattenData = (folder) => {
-                    let items = [];
-                    if(folder.files) {
-                        items.push(...folder.files.map(file => ({
-                            type: 'file',
-                            name: `${file.name}${file.extension}`,
-                            path: folder.path,
-                            is_new: file.is_new
-                        })));
-                    }
-                    if(folder.subfolders) {
-                        items.push({
-                            type: 'folder',
-                            name: folder.name,
-                            path: folder.path,
-                            file_count: folder.file_count
-                        });
-                        Object.values(folder.subfolders).forEach(sub => {
-                            items.push(...flattenData(sub));
-                        });
-                    }
-                    return items;
-                };
-
+        // Load data function
+        async function loadData() {
+            try {
+                const response = await fetch('movies.json');
+                if (!response.ok) throw new Error('Failed to load data');
+                
+                const data = await response.json();
                 allItems = flattenData(data.root);
                 
-                // 2. Setup fuzzy search
+                // Initialize fuzzy search
                 fuse = new Fuse(allItems, {
                     keys: ['name', 'path'],
                     threshold: 0.3,
-                    includeScore: true
+                    includeScore: true,
+                    ignoreLocation: true
                 });
 
-                // 3. Initial display
+                // Initial display
                 displayResults(allItems);
+            } catch (error) {
+                console.error('Error:', error);
+                showError('Failed to load movie data. Please try again later.');
+            }
+        }
+
+        // Flatten nested structure
+        function flattenData(folder) {
+            let items = [];
+            
+            // Add folder info
+            items.push({
+                type: 'folder',
+                name: folder.name,
+                path: folder.path,
+                file_count: folder.file_count
             });
 
-        // Search handler
-        document.getElementById('search').addEventListener('input', (e) => {
-            if(e.target.value === '') {
-                displayResults(allItems);
-                return;
+            // Add files
+            if (folder.files && folder.files.length > 0) {
+                items.push(...folder.files.map(file => ({
+                    type: 'file',
+                    name: `${file.name}${file.extension}`,
+                    path: folder.path,
+                    is_new: file.is_new
+                })));
             }
-            
-            const results = fuse.search(e.target.value)
-                                .sort((a,b) => a.score - b.score)
-                                .map(r => r.item);
-            displayResults(results);
-        });
+
+            // Process subfolders
+            if (folder.subfolders) {
+                Object.values(folder.subfolders).forEach(subfolder => {
+                    items.push(...flattenData(subfolder));
+                });
+            }
+
+            return items;
+        }
 
         // Display results
         function displayResults(items) {
             const container = document.getElementById('results');
-            let html = '';
             
-            items.forEach(item => {
-                if(item.type === 'folder') {
-                    html += `
-                        <div class="folder">
-                            <div class="folder-header">
-                                <i class="fas fa-folder"></i>
-                                <div>
-                                    <strong>${item.name}</strong>
-                                    <span style="color:#666; font-size:0.9em">
-                                        (${item.file_count} movies)
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    html += `
-                        <div class="file-item">
-                            <i class="fas fa-file-video" style="color:#4a90e2"></i>
-                            <div>
-                                ${item.name}
-                                ${item.is_new ? '<span class="new-badge">NEW</span>' : ''}
-                            </div>
-                            <div style="margin-left:auto; color:#666; font-size:0.9em">
-                                ${item.path}
-                            </div>
-                        </div>
-                    `;
-                }
-            });
+            if (items.length === 0) {
+                container.innerHTML = '<div class="error-message">No matching items found</div>';
+                return;
+            }
 
-            container.innerHTML = html || `<div class="help-text">No results found</div>`;
+            container.innerHTML = items.map(item => `
+                <div class="file-item">
+                    <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                        <i class="fas ${item.type === 'folder' ? 'fa-folder' : 'fa-file-video'}" 
+                           style="color: ${item.type === 'folder' ? '#4a90e2' : '#666'}; margin-right: 10px;">
+                        </i>
+                        <div>
+                            <strong>${item.name}</strong>
+                            ${item.is_new ? '<span class="new-badge">NEW</span>' : ''}
+                        </div>
+                    </div>
+                    <div style="color: #666; font-size: 0.9em;">
+                        ${item.path || 'Main Folder'}
+                        ${item.type === 'folder' ? ` (${item.file_count} files)` : ''}
+                    </div>
+                </div>
+            `).join('');
         }
+
+        // Error handling
+        function showError(message) {
+            const container = document.getElementById('results');
+            container.innerHTML = `<div class="error-message">${message}</div>`;
+        }
+
+        // Search functionality
+        document.getElementById('search').addEventListener('input', (e) => {
+            const query = e.target.value.trim();
+            
+            if (!query) {
+                displayResults(allItems);
+                return;
+            }
+
+            const results = fuse.search(query)
+                             .sort((a, b) => a.score - b.score)
+                             .map(result => result.item);
+            
+            displayResults(results);
+        });
+
+        // Initial load
+        loadData();
     </script>
 </body>
 </html>
