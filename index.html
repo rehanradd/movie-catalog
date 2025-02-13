@@ -8,21 +8,24 @@
     <style>
         /* Modern App Design System */
         :root {
-            --primary: #6366f1;
-            --secondary: #4f46e5;
-            --background: #ffffff;
-            --surface: #f8fafc;
-            --text: #1e293b;
-            --border: #e2e8f0;
-            --success: #22c55e;
+            --primary: #6d28d9; /* Purple */
+            --secondary: #8b5cf6; /* Light Purple */
+            --background: #f8fafc; /* Light Gray */
+            --surface: #ffffff; /* White */
+            --text: #1e293b; /* Dark Gray */
+            --border: #e2e8f0; /* Light Border */
+            --success: #10b981; /* Green */
+            --error: #ef4444; /* Red */
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         [data-theme="dark"] {
-            --background: #0f172a;
-            --surface: #1e293b;
-            --text: #f8fafc;
-            --border: #334155;
+            --primary: #7c3aed; /* Dark Purple */
+            --secondary: #a78bfa; /* Dark Light Purple */
+            --background: #0f172a; /* Dark Blue */
+            --surface: #1e293b; /* Dark Surface */
+            --text: #f8fafc; /* Light Text */
+            --border: #334155; /* Dark Border */
         }
 
         * {
@@ -41,19 +44,20 @@
 
         /* App Layout */
         .app-container {
-            display: grid;
-            grid-template-columns: 280px 1fr;
+            display: flex;
             min-height: 100vh;
         }
 
         /* Sidebar */
         .sidebar {
+            width: 280px;
             background: var(--surface);
             padding: 1.5rem;
             border-right: 1px solid var(--border);
             position: sticky;
             top: 0;
             height: 100vh;
+            overflow-y: auto;
         }
 
         .brand {
@@ -61,7 +65,6 @@
             align-items: center;
             gap: 12px;
             margin-bottom: 2rem;
-            padding: 0.5rem;
         }
 
         .brand-icon {
@@ -72,10 +75,38 @@
             display: grid;
             place-items: center;
             color: white;
+            font-size: 1.2rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            color: var(--text);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .nav-item:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .nav-item.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .nav-item i {
+            width: 24px;
+            text-align: center;
         }
 
         /* Main Content */
         .main-content {
+            flex: 1;
             padding: 2rem;
             max-width: 1200px;
             margin: 0 auto;
@@ -111,7 +142,7 @@
         /* Grid Layout */
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 1.5rem;
             margin-top: 2rem;
         }
@@ -125,6 +156,7 @@
             transition: var(--transition);
             cursor: pointer;
             position: relative;
+            overflow: hidden;
         }
 
         .card:hover {
@@ -158,31 +190,40 @@
             right: 1rem;
             background: rgba(255, 255, 255, 0.1);
             border: none;
-            padding: 6px 12px;
+            padding: 8px 16px;
             border-radius: 8px;
             color: inherit;
             cursor: pointer;
             transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
         .watchlist-btn.saved {
             background: var(--success);
+            color: white;
+        }
+
+        .watchlist-btn i {
+            font-size: 0.9rem;
         }
 
         /* Mobile Responsive */
         @media (max-width: 768px) {
             .app-container {
-                grid-template-columns: 1fr;
+                flex-direction: column;
             }
 
             .sidebar {
-                position: fixed;
                 width: 100%;
                 height: auto;
+                position: fixed;
                 bottom: 0;
                 top: auto;
                 border-top: 1px solid var(--border);
                 z-index: 100;
+                padding: 1rem;
             }
 
             .brand {
@@ -221,10 +262,15 @@
                 <div class="brand-icon">🎬</div>
                 <h1>Movie Pro</h1>
             </div>
-            <button class="card" id="watchlistBtn">
-                📌 Your Watchlist
-                <span class="badge" id="watchlistCount">0 Saved</span>
-            </button>
+            <a href="#" class="nav-item active">
+                <i class="fas fa-home"></i>
+                Home
+            </a>
+            <a href="#" class="nav-item" id="watchlistBtn">
+                <i class="fas fa-bookmark"></i>
+                Watchlist
+                <span class="badge" id="watchlistCount">0</span>
+            </a>
         </aside>
 
         <!-- Main Content -->
@@ -338,6 +384,7 @@
                             <button class="watchlist-btn ${isInWatchlist ? 'saved' : ''}" 
                                     data-movie="${item.name}" 
                                     onclick="toggleWatchlist('${item.name}')">
+                                <i class="fas fa-bookmark"></i>
                                 ${isInWatchlist ? 'Saved' : 'Save'}
                             </button>
                         </div>
@@ -380,7 +427,7 @@
 
         // Update watchlist count
         function updateWatchlistCount() {
-            document.getElementById('watchlistCount').textContent = `${watchlist.length} Saved`;
+            document.getElementById('watchlistCount').textContent = watchlist.length;
         }
 
         // Search functionality
