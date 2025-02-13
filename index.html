@@ -4,208 +4,182 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Movie Catalog</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* Improved Responsive Design */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
+        /* App Style */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+        body { background: #121212; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .app { width: 100%; max-width: 500px; background: #1E1E1E; border-radius: 10px; overflow: hidden; text-align: center; }
+        header { padding: 20px; background: #222; }
+        h1 { font-size: 24px; }
+        input {
+            width: 90%; padding: 10px; font-size: 18px; margin-top: 10px;
+            background: #333; color: white; border: none; border-radius: 5px;
         }
-
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            padding: 20px;
-            background: #f0f2f5;
+        main { padding: 20px; height: 60vh; overflow-y: auto; }
+        .movie-item {
+            display: flex; justify-content: space-between; padding: 12px;
+            background: #333; border-radius: 5px; margin-bottom: 10px;
+            cursor: pointer; transition: 0.3s;
         }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
+        .movie-item:hover { background: #444; }
+        button {
+            background: #007BFF; color: white; border: none; padding: 10px;
+            font-size: 18px; cursor: pointer; margin-top: 10px; border-radius: 5px;
         }
-
-        .search-box {
-            background: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
+        button:hover { background: #0056b3; }
+        #load-more { width: 100%; }
+        #watchlist-btn {
+            position: fixed; bottom: 20px; right: 20px;
+            background: gold; color: black; padding: 12px;
+            border-radius: 50px; font-size: 18px;
         }
-
-        #search {
-            width: 100%;
-            padding: 12px 20px;
-            font-size: 16px;
-            border: 2px solid #ddd;
-            border-radius: 25px;
-            outline: none;
+        /* Watchlist Modal */
+        #watchlist-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8); display: flex;
+            justify-content: center; align-items: center;
         }
-
-        #results {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
+        .hidden { display: none; }
+        .modal-content {
+            background: #222; padding: 20px; text-align: center;
+            width: 80%; border-radius: 10px;
         }
-
-        .file-item {
-            background: #fff;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .new-badge {
-            background: #28a745;
-            color: white;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 0.8em;
-            margin-left: 10px;
-        }
-
-        .error-message {
-            color: #dc3545;
-            text-align: center;
-            padding: 20px;
-        }
-
-        @media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
-            
-            #results {
-                grid-template-columns: 1fr;
-            }
-        }
+        .remove-btn { background: red; margin-left: 10px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="search-box">
-            <h1 style="margin-bottom: 15px; color: #1a1a1a;">🎬 Movie Catalog</h1>
-            <input type="text" id="search" placeholder="Search movies or folders...">
+
+    <div class="app">
+        <header>
+            <h1>🎬 Movie Catalog</h1>
+            <input type="text" id="search-input" placeholder="Search movies..." oninput="searchMovies()">
+        </header>
+
+        <main id="movie-list"></main>
+        <button id="load-more" onclick="loadMoreMovies()">Load More</button>
+
+        <button id="watchlist-btn" onclick="toggleWatchlist()">⭐ Watchlist</button>
+        
+        <div id="watchlist-modal" class="hidden">
+            <div class="modal-content">
+                <h2>⭐ My Watchlist</h2>
+                <div id="watchlist"></div>
+                <button id="clear-watchlist" onclick="clearWatchlist()">Clear Watchlist</button>
+                <button id="close-watchlist" onclick="toggleWatchlist()">Close</button>
+            </div>
         </div>
-        <div id="results"></div>
     </div>
 
-    <!-- Include Fuse.js -->
-    <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
     <script>
-        // Initialize Fuse.js
-        let fuse;
-        let allItems = [];
+        let moviesData = [
+            { name: "Avengers: Endgame", path: "/movies/avengers-endgame.mp4" },
+            { name: "Inception", path: "/movies/inception.mp4" },
+            { name: "Joker", path: "/movies/joker.mp4" },
+            { name: "Interstellar", path: "/movies/interstellar.mp4" },
+            { name: "Spider-Man: No Way Home", path: "/movies/spiderman-nwh.mp4" },
+            { name: "The Dark Knight", path: "/movies/dark-knight.mp4" },
+            { name: "Titanic", path: "/movies/titanic.mp4" },
+            { name: "The Matrix", path: "/movies/matrix.mp4" }
+        ];
 
-        // Load data function
-        async function loadData() {
-            try {
-                const response = await fetch('movies.json');
-                if (!response.ok) throw new Error('Failed to load data');
-                
-                const data = await response.json();
-                allItems = flattenData(data.root);
-                
-                // Initialize fuzzy search
-                fuse = new Fuse(allItems, {
-                    keys: ['name', 'path'],
-                    threshold: 0.3,
-                    includeScore: true,
-                    ignoreLocation: true
-                });
+        let loadedMovies = 0;
+        const batchSize = 4;
+        let watchlist = JSON.parse(localStorage.getItem("watchlist")) || [];
 
-                // Initial display
-                displayResults(allItems);
-            } catch (error) {
-                console.error('Error:', error);
-                showError('Failed to load movie data. Please try again later.');
+        function loadMoreMovies(reset = false) {
+            const movieContainer = document.getElementById("movie-list");
+            if (reset) { movieContainer.innerHTML = ""; loadedMovies = 0; }
+
+            let endIndex = Math.min(loadedMovies + batchSize, moviesData.length);
+            for (let i = loadedMovies; i < endIndex; i++) {
+                let movie = moviesData[i];
+                let movieItem = document.createElement("div");
+                movieItem.classList.add("movie-item");
+
+                let movieName = document.createElement("span");
+                movieName.innerText = movie.name;
+                movieName.onclick = () => copyToClipboard(movie.path);
+
+                let saveBtn = document.createElement("button");
+                saveBtn.innerText = "⭐";
+                saveBtn.onclick = () => addToWatchlist(movie);
+
+                movieItem.appendChild(movieName);
+                movieItem.appendChild(saveBtn);
+                movieContainer.appendChild(movieItem);
+            }
+
+            loadedMovies += batchSize;
+            document.getElementById("load-more").style.display = loadedMovies >= moviesData.length ? "none" : "block";
+        }
+
+        function searchMovies() {
+            const query = document.getElementById("search-input").value.toLowerCase();
+            let filteredMovies = moviesData.filter(movie => movie.name.toLowerCase().includes(query));
+            if (filteredMovies.length === 0) {
+                document.getElementById("movie-list").innerHTML = "<p>No movies found.</p>";
+                return;
+            }
+            moviesData = filteredMovies;
+            loadMoreMovies(true);
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text);
+            alert("Copied: " + text);
+        }
+
+        function addToWatchlist(movie) {
+            if (!watchlist.some(m => m.name === movie.name)) {
+                watchlist.push(movie);
+                localStorage.setItem("watchlist", JSON.stringify(watchlist));
+                renderWatchlist();
             }
         }
 
-        // Flatten nested structure
-        function flattenData(folder) {
-            let items = [];
-            
-            // Add folder info
-            items.push({
-                type: 'folder',
-                name: folder.name,
-                path: folder.path,
-                file_count: folder.file_count
+        function removeFromWatchlist(movieName) {
+            watchlist = watchlist.filter(movie => movie.name !== movieName);
+            localStorage.setItem("watchlist", JSON.stringify(watchlist));
+            renderWatchlist();
+        }
+
+        function renderWatchlist() {
+            let watchlistContainer = document.getElementById("watchlist");
+            watchlistContainer.innerHTML = watchlist.length === 0 ? "<p>No movies in watchlist.</p>" : "";
+
+            watchlist.forEach(movie => {
+                let item = document.createElement("div");
+                item.classList.add("movie-item");
+
+                let name = document.createElement("span");
+                name.innerText = movie.name;
+                name.onclick = () => copyToClipboard(movie.path);
+
+                let removeBtn = document.createElement("button");
+                removeBtn.classList.add("remove-btn");
+                removeBtn.innerText = "❌";
+                removeBtn.onclick = () => removeFromWatchlist(movie.name);
+
+                item.appendChild(name);
+                item.appendChild(removeBtn);
+                watchlistContainer.appendChild(item);
             });
-
-            // Add files
-            if (folder.files && folder.files.length > 0) {
-                items.push(...folder.files.map(file => ({
-                    type: 'file',
-                    name: `${file.name}${file.extension}`,
-                    path: folder.path,
-                    is_new: file.is_new
-                })));
-            }
-
-            // Process subfolders
-            if (folder.subfolders) {
-                Object.values(folder.subfolders).forEach(subfolder => {
-                    items.push(...flattenData(subfolder));
-                });
-            }
-
-            return items;
         }
 
-        // Display results
-        function displayResults(items) {
-            const container = document.getElementById('results');
-            
-            if (items.length === 0) {
-                container.innerHTML = '<div class="error-message">No matching items found</div>';
-                return;
-            }
-
-            container.innerHTML = items.map(item => `
-                <div class="file-item">
-                    <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                        <i class="fas ${item.type === 'folder' ? 'fa-folder' : 'fa-file-video'}" 
-                           style="color: ${item.type === 'folder' ? '#4a90e2' : '#666'}; margin-right: 10px;">
-                        </i>
-                        <div>
-                            <strong>${item.name}</strong>
-                            ${item.is_new ? '<span class="new-badge">NEW</span>' : ''}
-                        </div>
-                    </div>
-                    <div style="color: #666; font-size: 0.9em;">
-                        ${item.path || 'Main Folder'}
-                        ${item.type === 'folder' ? ` (${item.file_count} files)` : ''}
-                    </div>
-                </div>
-            `).join('');
+        function toggleWatchlist() {
+            document.getElementById("watchlist-modal").classList.toggle("hidden");
         }
 
-        // Error handling
-        function showError(message) {
-            const container = document.getElementById('results');
-            container.innerHTML = `<div class="error-message">${message}</div>`;
+        function clearWatchlist() {
+            watchlist = [];
+            localStorage.setItem("watchlist", JSON.stringify(watchlist));
+            renderWatchlist();
         }
 
-        // Search functionality
-        document.getElementById('search').addEventListener('input', (e) => {
-            const query = e.target.value.trim();
-            
-            if (!query) {
-                displayResults(allItems);
-                return;
-            }
-
-            const results = fuse.search(query)
-                             .sort((a, b) => a.score - b.score)
-                             .map(result => result.item);
-            
-            displayResults(results);
-        });
-
-        // Initial load
-        loadData();
+        // Load movies and watchlist on page load
+        loadMoreMovies();
+        renderWatchlist();
     </script>
+
 </body>
 </html>
