@@ -3,76 +3,18 @@
   "root": {
     "name": "Movies",
     "path": "/",
-    "file_count": 23,
-    "files": [],
+    "file_count": 5,
+    "files": [
+      {"name": "Sample Movie 1", "extension": ".mp4", "is_new": true},
+      {"name": "Sample Movie 2", "extension": ".mkv", "is_new": false}
+    ],
     "subfolders": {
-      "Hollywood": {
-        "name": "Hollywood",
-        "path": "/Hollywood",
-        "file_count": 8,
-        "files": [
-          {"name": "Inception (2010)", "extension": ".mkv", "is_new": false},
-          {"name": "The Dark Knight", "extension": ".mp4", "is_new": true}
-        ],
-        "subfolders": {
-          "Action": {
-            "name": "Action",
-            "path": "/Hollywood/Action",
-            "file_count": 3,
-            "files": [
-              {"name": "Mad Max Fury Road", "extension": ".avi", "is_new": true},
-              {"name": "John Wick 4", "extension": ".mkv", "is_new": false}
-            ],
-            "subfolders": {}
-          }
-        }
-      },
-      "Bollywood": {
-        "name": "Bollywood",
-        "path": "/Bollywood",
-        "file_count": 5,
-        "files": [
-          {"name": "Dhoom 3", "extension": ".mp4", "is_new": false}
-        ],
-        "subfolders": {
-          "2023 Hits": {
-            "name": "2023 Hits",
-            "path": "/Bollywood/2023 Hits",
-            "file_count": 2,
-            "files": [
-              {"name": "Pathaan", "extension": ".mkv", "is_new": true},
-              {"name": "Jawan", "extension": ".mp4", "is_new": true}
-            ],
-            "subfolders": {}
-          }
-        }
-      },
-      "Korean Dramas": {
-        "name": "Korean Dramas",
-        "path": "/Korean Dramas",
-        "file_count": 7,
-        "files": [
-          {"name": "Crash Landing On You", "extension": ".mkv", "is_new": false}
-        ],
-        "subfolders": {
-          "Romance": {
-            "name": "Romance",
-            "path": "/Korean Dramas/Romance",
-            "file_count": 2,
-            "files": [
-              {"name": "Goblin", "extension": ".mp4", "is_new": true},
-              {"name": "Hometown Cha-Cha-Cha", "extension": ".avi", "is_new": false}
-            ],
-            "subfolders": {}
-          }
-        }
-      },
-      "Anime": {
-        "name": "Anime",
-        "path": "/Anime",
+      "Action": {
+        "name": "Action",
+        "path": "/Action",
         "file_count": 3,
         "files": [
-          {"name": "Demon Slayer Mugen Train", "extension": ".mkv", "is_new": true}
+          {"name": "Action Movie 1", "extension": ".avi", "is_new": true}
         ],
         "subfolders": {}
       }
