@@ -45,15 +45,17 @@
             background: var(--surface);
             padding: 1.5rem;
             border-right: 1px solid var(--border);
-            position: sticky;
+            position: fixed;
             top: 0;
+            left: -280px; /* Hidden by default */
             height: 100vh;
             overflow-y: auto;
             transition: transform 0.3s ease-in-out;
+            z-index: 100;
         }
 
-        .sidebar.collapsed {
-            transform: translateX(-100%);
+        .sidebar.active {
+            transform: translateX(280px); /* Show sidebar */
         }
 
         .brand {
@@ -192,6 +194,11 @@
             gap: 4px;
         }
 
+        .file-size {
+            font-size: 0.9rem;
+            color: #9ca3af;
+        }
+
         /* Watchlist Button */
         .watchlist-btn {
             position: absolute;
@@ -217,11 +224,8 @@
             }
 
             .sidebar {
-                position: fixed;
                 width: 280px;
-                height: 100vh;
-                transform: translateX(-100%);
-                z-index: 100;
+                transform: translateX(-280px);
             }
 
             .sidebar.active {
@@ -255,6 +259,13 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             z-index: 101;
         }
+
+        /* Infinite Scroll Message */
+        .infinite-scroll-message {
+            text-align: center;
+            margin: 2rem 0;
+            color: var(--text);
+        }
     </style>
 </head>
 <body>
@@ -284,6 +295,7 @@
             </div>
 
             <div class="grid" id="results"></div>
+            <div id="infiniteScrollMessage" class="infinite-scroll-message"></div>
         </main>
 
         <!-- Menu Toggle -->
@@ -296,6 +308,9 @@
         let allItems = [];
         let watchlist = JSON.parse(localStorage.getItem('watchlist')) || [];
         let currentFolder = null;
+        let currentPage = 1;
+        const itemsPerPage = 20;
+        let isLoading = false;
 
         // Load movie data
         async function loadData() {
@@ -305,7 +320,7 @@
                 
                 const data = await response.json();
                 allItems = flattenData(data.root);
-                displayResults(allItems.slice(0, 50)); // Lazy load first 50 items
+                displayResults(allItems.slice(0, itemsPerPage)); // Load first page
                 updateWatchlist();
             } catch (error) {
                 console.error('Error:', error);
@@ -336,6 +351,7 @@
                     type: 'file',
                     name: `${file.name}${file.extension}`,
                     path: folder.path,
+                    size: file.size || 'N/A', // Add file size
                     is_new: file.is_new
                 })));
             }
@@ -377,6 +393,7 @@
                             <i class="fas fa-file-video" style="color:#4a90e2"></i>
                             <div>
                                 ${item.name}
+                                <div class="file-size">Size: ${item.size}</div>
                                 ${item.is_new ? '<span class="badge">NEW</span>' : ''}
                             </div>
                             <button class="watchlist-btn ${isInWatchlist ? 'saved' : ''}" 
@@ -389,7 +406,33 @@
                 }
             });
 
-            container.innerHTML = html || `<div class="help-text">No results found</div>`;
+            container.innerHTML += html; // Append new items
+            isLoading = false;
+        }
+
+        // Infinite scroll
+        window.addEventListener('scroll', () => {
+            const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+            if (scrollTop + clientHeight >= scrollHeight - 10 && !isLoading) {
+                loadMoreData();
+            }
+        });
+
+        // Load more data
+        function loadMoreData() {
+            if (isLoading) return;
+            isLoading = true;
+
+            const start = currentPage * itemsPerPage;
+            const end = start + itemsPerPage;
+            const nextItems = allItems.slice(start, end);
+
+            if (nextItems.length > 0) {
+                displayResults(nextItems);
+                currentPage++;
+            } else {
+                document.getElementById('infiniteScrollMessage').textContent = 'No more items to load.';
+            }
         }
 
         // Open folder
@@ -406,7 +449,7 @@
         document.getElementById('backBtn').addEventListener('click', () => {
             currentFolder = null;
             document.getElementById('backBtn').style.display = 'none';
-            displayResults(allItems.slice(0, 50));
+            displayResults(allItems.slice(0, itemsPerPage));
         });
 
         // Toggle watchlist
@@ -448,7 +491,8 @@
         document.getElementById('search').addEventListener('input', function () {
             const query = this.value.toLowerCase();
             const filtered = allItems.filter(item => item.name.toLowerCase().includes(query));
-            displayResults(filtered.slice(0, 50));
+            document.getElementById('results').innerHTML = ''; // Clear previous results
+            displayResults(filtered.slice(0, itemsPerPage));
         });
 
         // Menu toggle
