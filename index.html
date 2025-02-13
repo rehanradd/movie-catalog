@@ -223,7 +223,7 @@
             </div>
             <button class="card" id="watchlistBtn">
                 📌 Your Watchlist
-                <span class="badge">${watchlist.length} Saved</span>
+                <span class="badge" id="watchlistCount">0 Saved</span>
             </button>
         </aside>
 
@@ -262,6 +262,7 @@
                 const data = await response.json();
                 allItems = flattenData(data.root);
                 displayResults(allItems.slice(0, 50)); // Lazy load first 50 items
+                updateWatchlistCount();
             } catch (error) {
                 console.error('Error:', error);
                 document.getElementById('results').innerHTML = `
@@ -313,7 +314,7 @@
             items.forEach(item => {
                 if (item.type === 'folder') {
                     html += `
-                        <div class="folder ${item.is_updated ? 'updated-folder' : ''}" onclick="openFolder('${item.name}')">
+                        <div class="card folder ${item.is_updated ? 'updated-folder' : ''}" onclick="openFolder('${item.name}')">
                             <div class="folder-header">
                                 <i class="fas fa-folder"></i>
                                 <div>
@@ -328,11 +329,11 @@
                 } else {
                     const isInWatchlist = watchlist.some(movie => movie.name === item.name);
                     html += `
-                        <div class="file-item">
+                        <div class="card file-item">
                             <i class="fas fa-file-video" style="color:#4a90e2"></i>
                             <div>
                                 ${item.name}
-                                ${item.is_new ? '<span class="new-badge">NEW</span>' : ''}
+                                ${item.is_new ? '<span class="badge">NEW</span>' : ''}
                             </div>
                             <button class="watchlist-btn ${isInWatchlist ? 'saved' : ''}" 
                                     data-movie="${item.name}" 
@@ -374,6 +375,12 @@
             }
             localStorage.setItem('watchlist', JSON.stringify(watchlist));
             document.querySelector(`button[data-movie="${movieName}"]`).classList.toggle('saved');
+            updateWatchlistCount();
+        }
+
+        // Update watchlist count
+        function updateWatchlistCount() {
+            document.getElementById('watchlistCount').textContent = `${watchlist.length} Saved`;
         }
 
         // Search functionality
@@ -387,21 +394,9 @@
         document.getElementById('darkModeToggle').addEventListener('click', () => {
             document.body.dataset.theme = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
         });
-        
+
         // Initial load
         loadData();
-        const sidebar = document.querySelector('.sidebar');
-        const menuToggle = document.createElement('button');
-        menuToggle.innerHTML = '<i class="fas fa-bars"></i>';
-        menuToggle.style.position = 'fixed';
-        menuToggle.style.bottom = '6rem';
-        menuToggle.style.right = '2rem';
-        menuToggle.classList.add('theme-toggle');
-        document.body.appendChild(menuToggle);
-
-        menuToggle.addEventListener('click', () => {
-            sidebar.classList.toggle('active');
-        });
     </script>
 </body>
 </html>
