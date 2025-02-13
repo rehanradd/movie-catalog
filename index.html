@@ -6,96 +6,96 @@
     <title>Movie Catalog Pro</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* Modern App Design System */
         :root {
-            --primary: #6366f1;
-            --secondary: #4f46e5;
-            --background: #ffffff;
-            --surface: #f8fafc;
-            --text: #1e293b;
-            --border: #e2e8f0;
-            --success: #22c55e;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --primary: #ff4757;
+            --secondary: #ff6b81;
+            --background: #f5f6fa;
+            --surface: #ffffff;
+            --text: #2f3542;
+            --border: #dfe4ea;
+            --highlight: #ff9f43;
+            --success: #2ed573;
+            --transition: all 0.3s ease-in-out;
         }
 
         [data-theme="dark"] {
-            --background: #0f172a;
-            --surface: #1e293b;
-            --text: #f8fafc;
-            --border: #334155;
+            --background: #1e272e;
+            --surface: #485460;
+            --text: #f1f2f6;
+            --border: #808e9b;
+            --highlight: #ff9f43;
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            font-family: 'Segoe UI', sans-serif;
         }
 
         body {
-            font-family: 'Segoe UI', system-ui;
             background: var(--background);
             color: var(--text);
-            line-height: 1.6;
             transition: var(--transition);
         }
 
-        /* App Layout */
         .app-container {
-            display: grid;
-            grid-template-columns: 280px 1fr;
-            min-height: 100vh;
+            display: flex;
+            height: 100vh;
         }
 
-        /* Sidebar */
         .sidebar {
             background: var(--surface);
+            width: 250px;
             padding: 1.5rem;
-            border-right: 1px solid var(--border);
-            position: sticky;
-            top: 0;
-            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            border-right: 2px solid var(--border);
+            transition: var(--transition);
         }
 
         .brand {
             display: flex;
             align-items: center;
+            font-size: 1.5rem;
+            font-weight: bold;
             gap: 12px;
-            margin-bottom: 2rem;
-            padding: 0.5rem;
         }
 
-        .brand-icon {
-            width: 40px;
-            height: 40px;
-            background: var(--primary);
+        .sidebar nav {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .nav-item {
+            padding: 0.75rem 1rem;
             border-radius: 8px;
-            display: grid;
-            place-items: center;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: var(--transition);
+        }
+
+        .nav-item:hover {
+            background: var(--highlight);
             color: white;
         }
 
-        /* Main Content */
         .main-content {
+            flex: 1;
             padding: 2rem;
-            max-width: 1200px;
-            margin: 0 auto;
-            width: 100%;
-        }
-
-        /* Search Bar */
-        .search-container {
-            position: sticky;
-            top: 0;
-            background: var(--background);
-            padding: 1rem 0;
-            z-index: 10;
+            display: flex;
+            flex-direction: column;
         }
 
         .search-box {
             display: flex;
-            gap: 1rem;
+            align-items: center;
             background: var(--surface);
-            padding: 0.75rem 1.5rem;
+            padding: 0.75rem;
             border-radius: 12px;
             border: 1px solid var(--border);
         }
@@ -108,255 +108,189 @@
             font-size: 1rem;
         }
 
-        /* Grid Layout */
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
             gap: 1.5rem;
             margin-top: 2rem;
         }
 
-        /* Cards */
         .card {
             background: var(--surface);
-            border-radius: 16px;
             padding: 1.5rem;
-            border: 1px solid var(--border);
+            border-radius: 16px;
             transition: var(--transition);
             cursor: pointer;
             position: relative;
+            border: 2px solid var(--border);
         }
 
         .card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
         }
 
-        .card.folder {
-            background: linear-gradient(45deg, var(--primary), var(--secondary));
-            color: white;
-        }
-
-        .badge {
-            position: absolute;
-            top: -8px;
-            right: -8px;
-            background: var(--success);
-            color: white;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        /* Watchlist Button */
-        .watchlist-btn {
+        .save-btn {
             position: absolute;
             bottom: 1rem;
             right: 1rem;
-            background: rgba(255, 255, 255, 0.1);
+            background: var(--highlight);
+            color: white;
             border: none;
-            padding: 6px 12px;
+            padding: 8px 12px;
             border-radius: 8px;
-            color: inherit;
             cursor: pointer;
+            font-weight: bold;
             transition: var(--transition);
         }
 
-        .watchlist-btn.saved {
+        .save-btn:hover {
             background: var(--success);
         }
 
-        /* Mobile Responsive */
+        .theme-toggle {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            background: var(--surface);
+            padding: 1rem;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
         @media (max-width: 768px) {
             .app-container {
-                grid-template-columns: 1fr;
+                flex-direction: column;
             }
 
             .sidebar {
-                position: fixed;
                 width: 100%;
                 height: auto;
-                bottom: 0;
-                top: auto;
-                border-top: 1px solid var(--border);
-                z-index: 100;
-            }
-
-            .brand {
-                display: none;
-            }
-
-            .main-content {
-                padding: 1rem;
-                margin-bottom: 80px;
+                border-right: none;
+                border-bottom: 2px solid var(--border);
             }
 
             .grid {
                 grid-template-columns: 1fr;
             }
         }
-
-        /* Dark Mode Toggle */
-        .theme-toggle {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            padding: 1rem;
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
     </style>
 </head>
 <body>
     <div class="app-container">
-        <!-- Sidebar -->
         <aside class="sidebar">
             <div class="brand">
-                <div class="brand-icon">🎬</div>
-                <h1>Movie Pro</h1>
+                🎬 Movie Pro
             </div>
-            <button class="card" id="watchlistBtn">
-                📌 Your Watchlist
-                <span class="badge" id="watchlistCount">0 Saved</span>
-            </button>
+            <nav>
+                <div class="nav-item">📌 Your Watchlist <span id="watchlistCount">(0)</span></div>
+            </nav>
         </aside>
-
-        <!-- Main Content -->
+        
         <main class="main-content">
-            <div class="search-container">
-                <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="search" placeholder="Search 10,000+ movies...">
-                </div>
-                <button class="back-btn" id="backBtn" style="display: none;">
-                    <i class="fas fa-arrow-left"></i> Back
-                </button>
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="search" placeholder="Search movies...">
             </div>
-
             <div class="grid" id="results"></div>
         </main>
-
-        <!-- Theme Toggle -->
-        <button class="theme-toggle" id="darkModeToggle">
-            <i class="fas fa-moon"></i>
-        </button>
     </div>
-
-<script>
+    
+    <button class="theme-toggle" id="darkModeToggle">
+        <i class="fas fa-moon"></i>
+    </button>
+<script>document.addEventListener("DOMContentLoaded", () => {
     let allItems = [];
     let watchlist = JSON.parse(localStorage.getItem("watchlist")) || [];
-    let currentFolder = null;
+    const resultsContainer = document.getElementById("results");
+    const watchlistContainer = document.getElementById("watchlistContainer");
+    const watchlistBtn = document.getElementById("watchlistBtn");
+    const watchlistCount = document.getElementById("watchlistCount");
+    const searchInput = document.getElementById("search");
+    const darkModeToggle = document.getElementById("darkModeToggle");
 
     // Load movie data
     async function loadData() {
         try {
             const response = await fetch("movies.json");
             if (!response.ok) throw new Error("Failed to load data");
-
+            
             const data = await response.json();
             allItems = flattenData(data.root);
-            displayItems(allItems);
+            displayResults(allItems.slice(0, 50)); // Lazy load first 50 items
+            updateWatchlistCount();
         } catch (error) {
-            console.error("Error loading data:", error);
+            console.error(error);
         }
     }
 
-    // Flatten nested folders
-    function flattenData(items, parent = "") {
-        return items.flatMap((item) => {
-            const path = parent ? `${parent} / ${item.name}` : item.name;
-            if (item.type === "folder") {
-                return [{ ...item, path }, ...flattenData(item.children || [], path)];
-            }
-            return { ...item, path };
-        });
+    // Flatten folder structure
+    function flattenData(root) {
+        return root.reduce((acc, item) => {
+            if (item.movies) acc.push(...item.movies);
+            return acc;
+        }, []);
     }
 
-    // Display movies and folders
-    function displayItems(items) {
-        const resultsContainer = document.getElementById("results");
+    // Display movie results
+    function displayResults(items) {
         resultsContainer.innerHTML = "";
-
-        items.forEach((item) => {
+        items.forEach(movie => {
             const card = document.createElement("div");
             card.classList.add("card");
-            if (item.type === "folder") card.classList.add("folder");
-
             card.innerHTML = `
-                <h3>${item.name}</h3>
-                ${item.type === "movie" ? `<button class="watchlist-btn ${watchlist.includes(item.name) ? "saved" : ""}" data-name="${item.name}">${watchlist.includes(item.name) ? "✅ Saved" : "➕ Add"}</button>` : ""}
+                <h3>${movie.title}</h3>
+                <button class="save-btn ${watchlist.includes(movie.title) ? 'saved' : ''}" data-title="${movie.title}">
+                    ${watchlist.includes(movie.title) ? '✔ Saved' : '💾 Save'}
+                </button>
             `;
-
-            if (item.type === "folder") {
-                card.addEventListener("click", () => openFolder(item.name));
-            } else {
-                card.querySelector(".watchlist-btn").addEventListener("click", (e) => {
-                    e.stopPropagation();
-                    toggleWatchlist(item.name, e.target);
-                });
-            }
-
             resultsContainer.appendChild(card);
         });
-
-        document.getElementById("backBtn").style.display = currentFolder ? "block" : "none";
+        attachSaveListeners();
     }
 
-    // Open a folder
-    function openFolder(folderName) {
-        currentFolder = folderName;
-        const filteredItems = allItems.filter((item) => item.path.startsWith(folderName) && item.path !== folderName);
-        displayItems(filteredItems);
+    // Save to watchlist
+    function attachSaveListeners() {
+        document.querySelectorAll(".save-btn").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                const title = e.target.getAttribute("data-title");
+                if (watchlist.includes(title)) {
+                    watchlist = watchlist.filter(item => item !== title);
+                } else {
+                    watchlist.push(title);
+                }
+                localStorage.setItem("watchlist", JSON.stringify(watchlist));
+                updateWatchlist();
+                displayResults(allItems.slice(0, 50));
+            });
+        });
     }
 
-    // Go back to root
-    document.getElementById("backBtn").addEventListener("click", () => {
-        currentFolder = null;
-        displayItems(allItems);
-    });
-
-    // Search movies
-    document.getElementById("search").addEventListener("input", (e) => {
-        const query = e.target.value.toLowerCase();
-        const filtered = allItems.filter((item) => item.name.toLowerCase().includes(query));
-        displayItems(filtered);
-    });
-
-    // Toggle watchlist
-    function toggleWatchlist(movieName, button) {
-        if (watchlist.includes(movieName)) {
-            watchlist = watchlist.filter((name) => name !== movieName);
-            button.classList.remove("saved");
-            button.textContent = "➕ Add";
-        } else {
-            watchlist.push(movieName);
-            button.classList.add("saved");
-            button.textContent = "✅ Saved";
-        }
-        localStorage.setItem("watchlist", JSON.stringify(watchlist));
+    // Update watchlist UI
+    function updateWatchlist() {
+        watchlistContainer.innerHTML = watchlist.map(title => `<li>${title}</li>`).join(" ");
         updateWatchlistCount();
     }
 
-    // Update watchlist count
     function updateWatchlistCount() {
-        document.getElementById("watchlistCount").textContent = `${watchlist.length} Saved`;
+        watchlistCount.textContent = `${watchlist.length} Saved`;
     }
 
+    // Search functionality
+    searchInput.addEventListener("input", (e) => {
+        const query = e.target.value.toLowerCase();
+        const filtered = allItems.filter(movie => movie.title.toLowerCase().includes(query));
+        displayResults(filtered);
+    });
+
     // Dark mode toggle
-    document.getElementById("darkModeToggle").addEventListener("click", () => {
+    darkModeToggle.addEventListener("click", () => {
         document.body.dataset.theme = document.body.dataset.theme === "dark" ? "light" : "dark";
     });
 
-    // Initialize app
-    updateWatchlistCount();
     loadData();
+});
 </script>
-
 </body>
 </html>
