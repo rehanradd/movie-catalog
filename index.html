@@ -1,128 +1,182 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Movie Catalog</title>
+    <title>Simple Movie Finder</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        /* Simplified UI Styles */
         body {
             font-family: Arial, sans-serif;
-            background-color: #111;
-            color: white;
-            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
         }
-        h1 {
-            margin-top: 20px;
-        }
-        input {
-            width: 80%;
-            padding: 10px;
-            margin: 20px 0;
-            font-size: 16px;
-        }
-        .movie-list {
-            max-width: 900px;
-            margin: auto;
-            text-align: left;
-        }
-        .folder {
-            margin-top: 10px;
-            padding: 10px;
-            background: #222;
-            border-radius: 5px;
-            position: relative;
-        }
-        .folder h3 {
-            cursor: pointer;
-            padding: 10px;
-            margin: 0;
-            background: #333;
-            border-radius: 5px;
-        }
-        .file-count {
-            position: absolute;
-            right: 15px;
-            top: 12px;
-            background: #444;
-            color: white;
-            padding: 3px 7px;
+
+        .search-box {
+            background: white;
+            padding: 20px;
             border-radius: 10px;
-            font-size: 14px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
         }
-        .folder ul {
-            display: none;
-            list-style: none;
-            padding-left: 20px;
-            margin: 0;
+
+        #search {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
         }
-        .file {
-            color: #ffcc00;
-            padding: 5px;
+
+        .folder {
+            background: white;
+            margin: 10px 0;
+            border-radius: 5px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        .new {
-            color: #00ff00;
-            font-weight: bold;
+
+        .folder-header {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-item {
+            padding: 8px 15px;
+            margin: 5px 0;
+            background: #f8f9fa;
+            border-radius: 3px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .new-badge {
+            background: #28a745;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 0.8em;
+        }
+
+        .help-text {
+            color: #666;
+            margin: 20px 0;
+            text-align: center;
         }
     </style>
 </head>
 <body>
+    <div class="search-box">
+        <h1>🎥 Movie Finder</h1>
+        <input type="text" id="search" placeholder="Type any movie or folder name...">
+        <div class="help-text">(You can type even part of the name - we'll find it!)</div>
+    </div>
 
-    <h1>Movie Catalog</h1>
-    <input type="text" id="search" placeholder="Search for a movie or folder..." onkeyup="searchMovies()">
-    
-    <div class="movie-list" id="movie-list"></div>
+    <div id="results"></div>
 
+    <!-- Include Fuse.js for fuzzy search -->
+    <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
     <script>
-        async function loadMovies() {
-            const response = await fetch("movies.json");
-            const data = await response.json();
-            const movieList = document.getElementById("movie-list");
+        let fuse;
+        let allItems = [];
 
-            movieList.innerHTML = `<p>Last Updated: ${data.last_updated}</p>`;
-
-            Object.keys(data.movies).forEach(folder => {
-                let fileList = data.movies[folder].map(movie => 
-                    movie.includes("[NEW]") ? `<li class="file new">${movie.replace("[NEW]", "")} 🔥</li>` : `<li class="file">${movie}</li>`
-                ).join("");
-
-                movieList.innerHTML += `
-                    <div class="folder">
-                        <h3 onclick="toggleFolder(this)">${folder} 📁</h3>
-                        <span class="file-count">${data.movies[folder].length} files</span>
-                        <ul>${fileList}</ul>
-                    </div>
-                `;
-            });
-        }
-
-        function toggleFolder(header) {
-            let list = header.nextElementSibling.nextElementSibling;
-            list.style.display = (list.style.display === "block") ? "none" : "block";
-        }
-
-        function searchMovies() {
-            let input = document.getElementById("search").value.toLowerCase();
-            let folders = document.querySelectorAll(".folder");
-
-            folders.forEach(folder => {
-                let files = folder.querySelectorAll("li");
-                let found = false;
-
-                files.forEach(file => {
-                    if (file.textContent.toLowerCase().includes(input)) {
-                        file.style.display = "list-item";
-                        found = true;
-                    } else {
-                        file.style.display = "none";
+        // Load movie data
+        fetch('movies.json')
+            .then(res => res.json())
+            .then(data => {
+                // 1. Prepare search data
+                const flattenData = (folder) => {
+                    let items = [];
+                    if(folder.files) {
+                        items.push(...folder.files.map(file => ({
+                            type: 'file',
+                            name: `${file.name}${file.extension}`,
+                            path: folder.path,
+                            is_new: file.is_new
+                        })));
                     }
+                    if(folder.subfolders) {
+                        items.push({
+                            type: 'folder',
+                            name: folder.name,
+                            path: folder.path,
+                            file_count: folder.file_count
+                        });
+                        Object.values(folder.subfolders).forEach(sub => {
+                            items.push(...flattenData(sub));
+                        });
+                    }
+                    return items;
+                };
+
+                allItems = flattenData(data.root);
+                
+                // 2. Setup fuzzy search
+                fuse = new Fuse(allItems, {
+                    keys: ['name', 'path'],
+                    threshold: 0.3,
+                    includeScore: true
                 });
 
-                folder.style.display = found ? "block" : "none";
+                // 3. Initial display
+                displayResults(allItems);
             });
+
+        // Search handler
+        document.getElementById('search').addEventListener('input', (e) => {
+            if(e.target.value === '') {
+                displayResults(allItems);
+                return;
+            }
+            
+            const results = fuse.search(e.target.value)
+                                .sort((a,b) => a.score - b.score)
+                                .map(r => r.item);
+            displayResults(results);
+        });
+
+        // Display results
+        function displayResults(items) {
+            const container = document.getElementById('results');
+            let html = '';
+            
+            items.forEach(item => {
+                if(item.type === 'folder') {
+                    html += `
+                        <div class="folder">
+                            <div class="folder-header">
+                                <i class="fas fa-folder"></i>
+                                <div>
+                                    <strong>${item.name}</strong>
+                                    <span style="color:#666; font-size:0.9em">
+                                        (${item.file_count} movies)
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div class="file-item">
+                            <i class="fas fa-file-video" style="color:#4a90e2"></i>
+                            <div>
+                                ${item.name}
+                                ${item.is_new ? '<span class="new-badge">NEW</span>' : ''}
+                            </div>
+                            <div style="margin-left:auto; color:#666; font-size:0.9em">
+                                ${item.path}
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+
+            container.innerHTML = html || `<div class="help-text">No results found</div>`;
         }
-
-        loadMovies();
     </script>
-
 </body>
 </html>
