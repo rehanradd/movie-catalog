@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Movie Catalog Pro</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
     <style>
-        /* Modern Dark Theme Design System */
         :root {
             --primary: #7c3aed;
             --secondary: #a78bfa;
@@ -32,14 +32,12 @@
             line-height: 1.6;
         }
 
-        /* App Layout */
         .app-container {
             display: grid;
             grid-template-columns: 280px 1fr;
             min-height: 100vh;
         }
 
-        /* Sidebar */
         .sidebar {
             background: var(--surface);
             padding: 1.5rem;
@@ -50,70 +48,91 @@
             overflow-y: auto;
         }
 
-        .watchlist-section {
-            margin-top: 2rem;
-        }
-
-        .watchlist-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 12px;
-            margin: 8px 0;
-            background: var(--background);
-            border-radius: 8px;
-            border: 1px solid var(--border);
-        }
-
-        .watchlist-item:hover {
-            background: var(--primary);
-        }
-
-        .remove-btn {
-            background: none;
-            border: none;
-            color: var(--error);
-            cursor: pointer;
-            padding: 4px;
-        }
-
-        /* Main Content */
         .main-content {
             padding: 2rem;
+            width: 100%;
             max-width: 1200px;
             margin: 0 auto;
+        }
+
+        .search-container {
+            margin-bottom: 2rem;
+        }
+
+        #search {
             width: 100%;
-        }
-
-        /* Infinite Scroll Loader */
-        .loader {
-            text-align: center;
-            padding: 20px;
+            padding: 1rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
             color: var(--text);
-            display: none;
+            border-radius: 8px;
+            font-size: 1rem;
         }
 
-        /* File Cards */
-        .card {
+        .movie-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .movie-card {
             background: var(--surface);
             border-radius: 12px;
             padding: 1.5rem;
-            margin: 1rem 0;
             border: 1px solid var(--border);
-            position: relative;
+            transition: var(--transition);
         }
 
-        .card.folder {
-            background: linear-gradient(45deg, var(--primary), var(--secondary));
+        .movie-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
         }
 
-        .file-size {
-            color: var(--success);
+        .movie-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+
+        .movie-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-right: 1rem;
+        }
+
+        .movie-path {
+            color: var(--secondary);
             font-size: 0.9rem;
-            margin-top: 8px;
+            margin-bottom: 0.5rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
-        /* Responsive Design */
+        .movie-details {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            color: #94a3b8;
+        }
+
+        .watchlist-btn {
+            background: none;
+            border: 1px solid var(--primary);
+            color: var(--text);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .watchlist-btn.saved {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
         @media (max-width: 768px) {
             .app-container {
                 grid-template-columns: 1fr;
@@ -126,59 +145,60 @@
 </head>
 <body>
     <div class="app-container">
-        <!-- Sidebar -->
         <aside class="sidebar">
             <h2>📽 Your Watchlist</h2>
             <div class="watchlist-section" id="watchlistItems"></div>
         </aside>
 
-        <!-- Main Content -->
         <main class="main-content">
             <div class="search-container">
-                <input type="text" id="search" placeholder="Search movies..." 
-                       style="width:100%; padding:12px; background:var(--surface); border:1px solid var(--border); color:var(--text); border-radius:8px;">
+                <input type="text" id="search" placeholder="Search movies...">
             </div>
-            
-            <div id="results"></div>
-            <div class="loader" id="loader">Loading more movies...</div>
-            <div class="loader" id="endMessage" style="display:none;">No more movies to load</div>
+            <div class="movie-grid" id="results"></div>
+            <div id="loader" class="loader">Loading...</div>
         </main>
     </div>
 
 <script>
-let allItems = [];
-let visibleItems = 50;
-let isLoading = false;
+let allMovies = [];
+let fuse = null;
 let watchlist = JSON.parse(localStorage.getItem('watchlist')) || [];
 
-// Load initial data
 async function loadData() {
     try {
         const response = await fetch('movies.json');
         const data = await response.json();
-        allItems = processData(data);
-        renderItems();
-        setupInfiniteScroll();
+        allMovies = data.movies.sort((a, b) => 
+            new Date(b.modified_date) - new Date(a.modified_date));
+        
+        initializeSearch();
+        renderMovies(allMovies);
         updateWatchlist();
     } catch (error) {
         console.error('Error loading data:', error);
     }
 }
 
-// Process data with file sizes
-function processData(data) {
-    // Add this conversion logic to your Python script that generates movies.json
-    return data.root.subfolders.flatMap(folder => 
-        folder.files.map(file => ({
-            ...file,
-            path: folder.name,
-            size: formatSize(file.size) // Ensure your JSON has size in bytes
-        }))
-    );
+function initializeSearch() {
+    fuse = new Fuse(allMovies, {
+        keys: ['name', 'path'],
+        threshold: 0.3,
+        includeScore: true
+    });
+
+    document.getElementById('search').addEventListener('input', (e) => {
+        const query = e.target.value;
+        if (query.length > 0) {
+            const results = fuse.search(query);
+            renderMovies(results.map(r => r.item));
+        } else {
+            renderMovies(allMovies);
+        }
+    });
 }
 
 function formatSize(bytes) {
-    if (!bytes) return 'Size unknown';
+    if (!bytes) return '0 B';
     const units = ['B', 'KB', 'MB', 'GB'];
     let size = bytes;
     let unitIndex = 0;
@@ -189,69 +209,37 @@ function formatSize(bytes) {
     return `${size.toFixed(1)} ${units[unitIndex]}`;
 }
 
-// Render items with infinite scroll
-function renderItems() {
+function renderMovies(movies) {
     const container = document.getElementById('results');
-    const itemsToShow = allItems.slice(0, visibleItems);
-    
-    container.innerHTML = itemsToShow.map(item => `
-        <div class="card">
-            <div style="display:flex; justify-content:space-between;">
+    container.innerHTML = movies.map(movie => `
+        <div class="movie-card">
+            <div class="movie-header">
                 <div>
-                    <h3>${item.name}</h3>
-                    <div class="file-size">${item.size}</div>
-                    <div style="color:var(--secondary); margin-top:4px;">${item.path}</div>
+                    <div class="movie-title">${movie.name}${movie.extension}</div>
+                    <div class="movie-path">${movie.path}</div>
                 </div>
-                <button class="watchlist-btn" data-id="${item.name}" 
-                        onclick="toggleWatchlist('${item.name}')"
-                        style="background:${watchlist.some(m => m.name === item.name) ? 'var(--success)' : 'var(--surface)'}; 
-                               padding:8px 16px; border:none; border-radius:8px; color:var(--text);">
-                    ${watchlist.some(m => m.name === item.name) ? '★ Saved' : '☆ Save'}
+                <button class="watchlist-btn ${watchlist.some(m => m.path === movie.path && m.name === movie.name) ? 'saved' : ''}" 
+                        onclick="toggleWatchlist('${movie.name}', '${movie.path}')">
+                    ${watchlist.some(m => m.path === movie.path && m.name === movie.name) ? '★ Saved' : '☆ Save'}
                 </button>
+            </div>
+            <div class="movie-details">
+                <span>${movie.modified_date.split(' ')[0]}</span>
+                <span>${formatSize(movie.size)}</span>
             </div>
         </div>
     `).join('');
 }
 
-// Infinite scroll setup
-function setupInfiniteScroll() {
-    window.addEventListener('scroll', () => {
-        if (isLoading) return;
-        
-        const { scrollTop, clientHeight, scrollHeight } = document.documentElement;
-        if (scrollTop + clientHeight >= scrollHeight - 100) {
-            loadMoreItems();
-        }
-    });
-}
-
-async function loadMoreItems() {
-    isLoading = true;
-    document.getElementById('loader').style.display = 'block';
-    
-    // Simulated delay for loading
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    visibleItems += 50;
-    if (visibleItems >= allItems.length) {
-        document.getElementById('endMessage').style.display = 'block';
-    }
-    
-    renderItems();
-    isLoading = false;
-    document.getElementById('loader').style.display = 'none';
-}
-
-// Watchlist functionality
-function toggleWatchlist(name) {
-    const index = watchlist.findIndex(item => item.name === name);
+function toggleWatchlist(name, path) {
+    const index = watchlist.findIndex(item => item.name === name && item.path === path);
     if (index === -1) {
-        watchlist.push({ name });
+        watchlist.push({ name, path });
     } else {
         watchlist.splice(index, 1);
     }
     localStorage.setItem('watchlist', JSON.stringify(watchlist));
-    renderItems();
+    renderMovies(allMovies);
     updateWatchlist();
 }
 
@@ -260,21 +248,20 @@ function updateWatchlist() {
     container.innerHTML = watchlist.map(item => `
         <div class="watchlist-item">
             <div>${item.name}</div>
-            <button class="remove-btn" onclick="removeFromWatchlist('${item.name}')">
+            <button class="remove-btn" onclick="removeFromWatchlist('${item.name}', '${item.path}')">
                 <i class="fas fa-times"></i>
             </button>
         </div>
     `).join('');
 }
 
-function removeFromWatchlist(name) {
-    watchlist = watchlist.filter(item => item.name !== name);
+function removeFromWatchlist(name, path) {
+    watchlist = watchlist.filter(item => !(item.name === name && item.path === path));
     localStorage.setItem('watchlist', JSON.stringify(watchlist));
     updateWatchlist();
-    renderItems();
+    renderMovies(allMovies);
 }
 
-// Initial load
 loadData();
 </script>
 </body>
