@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Media Browser</title>
-    <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
+    <title>File Browser</title>
     <style>
         :root {
             --primary-color: #2c3e50;
@@ -32,80 +31,49 @@
             margin: 0 auto;
         }
 
-        .search-box {
-            margin-bottom: 30px;
-            position: sticky;
-            top: 0;
-            background: var(--background);
-            z-index: 100;
-            padding: 10px 0;
-        }
-
-        #searchInput {
-            width: 100%;
-            padding: 15px 20px;
-            font-size: 18px;
-            border: 2px solid #ddd;
-            border-radius: 30px;
-            outline: none;
-            transition: all 0.3s ease;
-        }
-
-        .folder-tree {
-            list-style: none;
-            padding-left: 20px;
-        }
-
-        .folder-tree li {
-            margin: 10px 0;
-        }
-
-        .folder-header {
-            font-weight: 600;
-            color: var(--primary-color);
-            cursor: pointer;
+        .breadcrumb {
             display: flex;
-            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #7f8c8d;
         }
 
-        .folder-header::before {
-            content: '📁';
-            margin-right: 8px;
+        .breadcrumb span {
+            cursor: pointer;
         }
 
-        .folder-header.collapsed::before {
-            content: '📂';
+        .breadcrumb span:hover {
+            color: var(--secondary-color);
         }
 
         .file-list {
-            list-style: none;
-            padding-left: 20px;
-            margin-top: 10px;
+            display: grid;
+            gap: 10px;
         }
 
-        .file-item {
+        .file-item, .folder-item {
+            padding: 10px;
+            border-radius: 8px;
+            background: white;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            padding: 8px;
-            border-radius: 6px;
-            background: #f8f9fa;
-            margin: 5px 0;
+            gap: 10px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
         }
 
-        .file-item.new::after {
-            content: 'New';
-            background: #27ae60;
-            color: white;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 12px;
-            margin-left: 10px;
+        .file-item:hover, .folder-item:hover {
+            transform: translateX(5px);
+        }
+
+        .file-icon, .folder-icon {
+            width: 24px;
+            height: 24px;
         }
 
         .file-name {
             flex: 1;
-            margin-right: 15px;
         }
 
         .file-info {
@@ -116,12 +84,12 @@
             color: #7f8c8d;
         }
 
-        .file-size::before {
-            content: '📦 ';
-        }
-
-        .file-date::before {
-            content: '📅 ';
+        .new-indicator {
+            background: #27ae60;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
         }
 
         .loading {
@@ -133,19 +101,55 @@
 </head>
 <body>
     <div class="container">
-        <div class="search-box">
-            <input type="text" id="searchInput" placeholder="Search files or folders...">
+        <div class="breadcrumb" id="breadcrumb">
+            <span onclick="navigateTo('root')">Home</span>
         </div>
-        <ul id="folderTree" class="folder-tree"></ul>
+        <div id="fileList" class="file-list"></div>
         <div id="loading" class="loading">Loading...</div>
     </div>
 
     <script>
-        let allFiles = [];
-        let fuse = null;
-        let currentResults = [];
+        let currentPath = 'root';
+        let currentData = [];
+        let itemsPerPage = 20;
+        let currentPage = 1;
+        let isLoading = false;
 
-        // Format file size
+        const mockData = {
+            root: {
+                type: 'folder',
+                children: ['C:', 'D:', 'E:']
+            },
+            'C:': {
+                type: 'folder',
+                children: ['Program Files', 'Users', 'Windows']
+            },
+            'D:': {
+                type: 'folder',
+                children: ['Movies', 'Music', 'Documents']
+            },
+            'E:': {
+                type: 'folder',
+                children: ['Backup', 'Projects']
+            },
+            'Movies': {
+                type: 'folder',
+                children: ['Action', 'Comedy', 'Drama']
+            },
+            'Action': {
+                type: 'folder',
+                children: ['movie1.mp4', 'movie2.mkv', 'movie3.avi']
+            },
+            'Comedy': {
+                type: 'folder',
+                children: ['comedy1.mp4', 'comedy2.mkv']
+            },
+            'Drama': {
+                type: 'folder',
+                children: ['drama1.mp4', 'drama2.mkv']
+            }
+        };
+
         function formatSize(bytes) {
             if (bytes === 0) return '0 Bytes';
             const k = 1024;
@@ -154,146 +158,73 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        // Check if a file is new (added today)
-        function isNewFile(modifiedDate) {
-            const today = new Date();
-            const fileDate = new Date(modifiedDate);
-            return (
-                fileDate.getDate() === today.getDate() &&
-                fileDate.getMonth() === today.getMonth() &&
-                fileDate.getFullYear() === today.getFullYear()
-            );
+        function renderBreadcrumb(path) {
+            const parts = path.split('/');
+            const breadcrumb = document.getElementById('breadcrumb');
+            breadcrumb.innerHTML = parts.map((part, index) => `
+                <span onclick="navigateTo('${parts.slice(0, index + 1).join('/')}')">${part}</span>
+            `).join(' > ');
         }
 
-        // Sort files numerically if they start with numbers, otherwise alphabetically
-        function sortFiles(files) {
-            return files.sort((a, b) => {
-                const aName = a.name.toLowerCase();
-                const bName = b.name.toLowerCase();
+        function renderFileList() {
+            const container = document.getElementById('fileList');
+            const data = currentData.slice(0, currentPage * itemsPerPage);
+            
+            container.innerHTML = data.map(item => `
+                <div class="${item.type === 'folder' ? 'folder-item' : 'file-item'}" onclick="${item.type === 'folder' ? `navigateTo('${currentPath}/${item.name}')` : ''}">
+                    <img src="${item.type === 'folder' ? 'folder-icon.png' : 'file-icon.png'}" alt="${item.type}" class="${item.type === 'folder' ? 'folder-icon' : 'file-icon'}">
+                    <div class="file-name">${item.name}</div>
+                    ${item.type === 'file' ? `
+                        <div class="file-info">
+                            <div>${formatSize(item.size)}</div>
+                            <div>${item.modified_date}</div>
+                            ${item.is_new ? '<div class="new-indicator">New</div>' : ''}
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('');
+        }
 
-                // Extract numbers from the start of the filename
-                const aNumMatch = aName.match(/^\d+/);
-                const bNumMatch = bName.match(/^\d+/);
+        function navigateTo(path) {
+            currentPath = path;
+            currentPage = 1;
+            renderBreadcrumb(path);
+            loadData(path);
+        }
 
-                if (aNumMatch && bNumMatch) {
-                    return parseInt(aNumMatch[0]) - parseInt(bNumMatch[0]);
+        function loadData(path) {
+            const data = mockData[path.split('/').pop()]?.children || [];
+            currentData = data.map(item => ({
+                name: item,
+                type: item.includes('.') ? 'file' : 'folder',
+                size: Math.floor(Math.random() * 1000000000),
+                modified_date: new Date().toLocaleDateString(),
+                is_new: Math.random() > 0.5
+            })).sort((a, b) => a.name.localeCompare(b.name));
+
+            renderFileList();
+        }
+
+        function setupInfiniteScroll() {
+            window.addEventListener('scroll', () => {
+                const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+                if (scrollTop + clientHeight >= scrollHeight - 100 && !isLoading) {
+                    isLoading = true;
+                    document.getElementById('loading').style.display = 'block';
+                    
+                    setTimeout(() => {
+                        currentPage++;
+                        renderFileList();
+                        isLoading = false;
+                        document.getElementById('loading').style.display = 'none';
+                    }, 500);
                 }
-                return aName.localeCompare(bName);
-            });
-        }
-
-        // Build folder tree structure
-        function buildFolderTree(files) {
-            const tree = {};
-
-            files.forEach(file => {
-                const pathParts = file.path.split('\\');
-                let currentLevel = tree;
-
-                pathParts.forEach((part, index) => {
-                    if (!currentLevel[part]) {
-                        currentLevel[part] = {};
-                    }
-                    currentLevel = currentLevel[part];
-                });
-
-                if (!currentLevel.files) {
-                    currentLevel.files = [];
-                }
-                currentLevel.files.push(file);
-            });
-
-            return tree;
-        }
-
-        // Render folder tree
-        function renderFolderTree(tree, parentElement) {
-            for (const [name, content] of Object.entries(tree)) {
-                if (name === 'files') {
-                    const sortedFiles = sortFiles(content);
-                    const fileList = document.createElement('ul');
-                    fileList.className = 'file-list';
-
-                    sortedFiles.forEach(file => {
-                        const fileItem = document.createElement('li');
-                        fileItem.className = `file-item ${isNewFile(file.modified_date) ? 'new' : ''}`;
-                        fileItem.innerHTML = `
-                            <div class="file-name">${file.name}${file.extension}</div>
-                            <div class="file-info">
-                                <span class="file-size">${formatSize(file.size)}</span>
-                                <span class="file-date">${file.modified_date.split(' ')[0]}</span>
-                            </div>
-                        `;
-                        fileList.appendChild(fileItem);
-                    });
-
-                    parentElement.appendChild(fileList);
-                } else {
-                    const folderItem = document.createElement('li');
-                    const folderHeader = document.createElement('div');
-                    folderHeader.className = 'folder-header';
-                    folderHeader.textContent = name;
-
-                    folderHeader.addEventListener('click', () => {
-                        folderHeader.classList.toggle('collapsed');
-                        const fileList = folderItem.querySelector('.file-list');
-                        if (fileList) {
-                            fileList.style.display = fileList.style.display === 'none' ? 'block' : 'none';
-                        }
-                    });
-
-                    folderItem.appendChild(folderHeader);
-                    parentElement.appendChild(folderItem);
-
-                    const subTree = document.createElement('ul');
-                    subTree.className = 'folder-tree';
-                    folderItem.appendChild(subTree);
-
-                    renderFolderTree(content, subTree);
-                }
-            }
-        }
-
-        // Initialize search
-        async function initSearch() {
-            try {
-                const response = await fetch('movies.json');
-                const data = await response.json();
-                allFiles = data.movies;
-
-                fuse = new Fuse(allFiles, {
-                    keys: ['name', 'path'],
-                    threshold: 0.3,
-                    minMatchCharLength: 2
-                });
-
-                currentResults = allFiles;
-                renderFolderTree(buildFolderTree(currentResults), document.getElementById('folderTree'));
-                setupSearch();
-            } catch (error) {
-                console.error('Error loading data:', error);
-            }
-        }
-
-        // Setup search input handler
-        function setupSearch() {
-            const searchInput = document.getElementById('searchInput');
-            searchInput.addEventListener('input', (e) => {
-                const query = e.target.value.trim();
-                if (query === '') {
-                    currentResults = allFiles;
-                } else {
-                    currentResults = fuse.search(query).map(result => result.item);
-                }
-
-                const folderTree = document.getElementById('folderTree');
-                folderTree.innerHTML = '';
-                renderFolderTree(buildFolderTree(currentResults), folderTree);
             });
         }
 
         // Initial load
-        initSearch();
+        navigateTo('root');
+        setupInfiniteScroll();
     </script>
 </body>
 </html>
