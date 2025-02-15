@@ -3,32 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Library</title>
+    <title>Video Library Manager</title>
     <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
     <style>
-        /* CSS remains the same as previous version */
         :root {
-            --primary: #2d2d2d;
-            --secondary: #f8f9fa;
-            --accent: #4a90e2;
-            --highlight: #fff3cd;
+            --primary: #2d3748;
+            --secondary: #f7fafc;
+            --accent: #4299e1;
+            --highlight: #c6f6d5;
+            --text: #4a5568;
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Inter', system-ui, sans-serif;
         }
 
         body {
             background: var(--secondary);
-            color: var(--primary);
+            color: var(--text);
             line-height: 1.6;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
         }
@@ -36,73 +36,121 @@
         .header {
             background: var(--primary);
             color: white;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
         .search-container {
             display: flex;
-            gap: 10px;
-            margin-bottom: 1rem;
+            gap: 15px;
+            margin-bottom: 1.5rem;
         }
 
         #search {
             flex: 1;
-            padding: 0.8rem;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
             font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        #search:focus {
+            border-color: var(--accent);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
         }
 
         .view-toggle {
             background: var(--accent);
             color: white;
             border: none;
-            padding: 0.8rem 1.2rem;
-            border-radius: 4px;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
             cursor: pointer;
-            transition: opacity 0.2s;
+            font-weight: 500;
+            transition: transform 0.1s;
+        }
+
+        .view-toggle:hover {
+            transform: translateY(-1px);
         }
 
         .file-tree {
             background: white;
-            border-radius: 8px;
-            padding: 1rem;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
 
         .item {
-            padding: 0.5rem 0;
+            padding: 0.75rem 1rem;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .item:hover {
+            background: #f8fafc;
+        }
+
+        .folder::before {
+            content: '📁';
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+
+        .file::before {
+            content: '📄';
+            margin-right: 10px;
+            font-size: 1.2em;
+        }
+
+        .item-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .item-name {
+            font-weight: 500;
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
-        .folder::before {
-            content: '📁';
-            margin-right: 8px;
+        .item-details {
+            display: flex;
+            gap: 15px;
+            margin-top: 4px;
+            font-size: 0.9em;
+            color: #718096;
         }
 
-        .file::before {
-            content: '📄';
-            margin-right: 8px;
+        .item-extension {
+            background: #e2e8f0;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 500;
         }
 
-        .item-name {
-            flex: 1;
-            overflow: hidden;
-            text-overflow: ellipsis;
+        .item-size {
+            font-feature-settings: "tnum";
+        }
+
+        .item-date {
+            margin-left: auto;
         }
 
         .item-count {
-            background: var(--secondary);
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.9rem;
+            background: #edf2f7;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 500;
         }
 
         .highlight {
@@ -113,20 +161,27 @@
 
         .loading {
             text-align: center;
-            padding: 1rem;
-            color: #666;
+            padding: 2rem;
+            color: #718096;
+            font-size: 1.1em;
         }
 
         @media (max-width: 768px) {
             .container {
-                padding: 10px;
+                padding: 15px;
             }
             
             .search-container {
                 flex-direction: column;
             }
             
-            .view-toggle {
+            .item-details {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            
+            .item-date {
+                margin-left: 0;
                 width: 100%;
             }
         }
@@ -135,38 +190,40 @@
 <body>
     <div class="header">
         <div class="container">
-            <h1>Video Library</h1>
+            <h1>🎥 Video Library Manager</h1>
         </div>
     </div>
 
     <div class="container">
         <div class="search-container">
-            <input type="text" id="search" placeholder="Search files and folders...">
-            <button class="view-toggle" id="toggleView">Tree View</button>
+            <input type="text" id="search" placeholder="Search movies or folders...">
+            <button class="view-toggle" id="toggleView">Switch to List View</button>
         </div>
         <div class="file-tree" id="fileTree"></div>
-        <div class="loading" id="loading">Loading...</div>
+        <div class="loading" id="loading">Loading video library...</div>
     </div>
 
 <script>
-// Debugging flag
-const DEBUG = true;
-let allItems = null;
+let originalData = [];
 let fuse = null;
-const pageSize = 100;
+let isTreeView = true;
+const pageSize = 50;
 let visibleItems = pageSize;
 let currentStructure = null;
 
-function log(...messages) {
-    if(DEBUG) console.log(...messages);
-}
+// File size formatting
+const formatSize = bytes => {
+    if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(1)} GB`;
+    if (bytes >= 1e6) return `${(bytes / 1e6).toFixed(1)} MB`;
+    if (bytes >= 1e3) return `${(bytes / 1e3).toFixed(0)} KB`;
+    return `${bytes} B`;
+};
 
-function normalizePath(path) {
-    return path.replace(/\\/g, '/').replace(/\/+/g, '/').replace(/^\/|\/$/g, '');
-}
+// Path normalization
+const normalizePath = path => path.replace(/\\/g, '/').replace(/\/+/g, '/').replace(/^\/|\/$/g, '');
 
+// Create folder structure
 function createStructure(movies) {
-    log('Creating folder structure...');
     const root = { 
         name: 'Root', 
         path: '',
@@ -181,8 +238,9 @@ function createStructure(movies) {
         let current = root;
 
         pathParts.forEach((part, index) => {
+            if (!part) return;
             let child = current.children.find(c => c.name === part);
-            if (!child && part) {
+            if (!child) {
                 child = {
                     name: part,
                     path: pathParts.slice(0, index + 1).join('/'),
@@ -193,71 +251,78 @@ function createStructure(movies) {
                 };
                 current.children.push(child);
             }
-            if (child) current = child;
+            current = child;
         });
 
-        // Add the file
+        // Add file with extension
+        const extension = movie.name.split('.').pop().toLowerCase();
         current.children.push({
             ...movie,
             name: movie.name,
+            extension,
             path: movie.path,
             isFolder: false
         });
     });
 
-    // Calculate file counts
+    // Calculate counts
     function countFiles(node) {
         if (!node.isFolder) return 1;
         node.count = node.children.reduce((sum, child) => sum + countFiles(child), 0);
         return node.count;
     }
-
     countFiles(root);
-    log('Folder structure created:', root);
+
     return root;
 }
 
+// Flatten structure for rendering
 function flattenStructure(node, depth = 0) {
     if (!node) return [];
     const items = [];
 
     if (node.isFolder) {
-        items.push({ ...node, depth, isVisible: true });
+        items.push({ ...node, depth });
         if (node.isOpen) {
             node.children.forEach(child => {
                 items.push(...flattenStructure(child, depth + 1));
             });
         }
     } else {
-        items.push({ ...node, depth, isVisible: true });
+        items.push({ ...node, depth });
     }
 
     return items;
 }
 
-function renderTree() {
-    log('Rendering tree...');
+// Render items
+function renderItems() {
     const container = document.getElementById('fileTree');
-    if (!currentStructure) return;
-
-    const itemsToShow = flattenStructure(currentStructure).slice(0, visibleItems);
-    let html = '';
-
-    itemsToShow.forEach(item => {
-        html += `
-            <div class="item ${item.isFolder ? 'folder' : 'file'}" 
-                 style="padding-left: ${item.depth * 20}px"
-                 data-path="${item.path}">
-                <span class="item-name">${highlightMatches(item.name)}</span>
-                ${item.isFolder ? `<span class="item-count">${item.count}</span>` : ''}
+    const items = flattenStructure(currentStructure).slice(0, visibleItems);
+    
+    container.innerHTML = items.length ? items.map(item => `
+        <div class="item ${item.isFolder ? 'folder' : 'file'}" 
+             style="padding-left: ${item.depth * 24}px"
+             data-path="${item.path}">
+            <div class="item-info">
+                <div class="item-name">
+                    ${highlightMatches(item.name)}
+                    ${item.isFolder ? `<span class="item-count">${item.count}</span>` : ''}
+                </div>
+                ${!item.isFolder ? `
+                <div class="item-details">
+                    <span class="item-extension">${item.extension}</span>
+                    <span class="item-size">${formatSize(item.size)}</span>
+                    <span class="item-date">Modified: ${item.modified_date}</span>
+                </div>` : ''}
             </div>
-        `;
-    });
+        </div>
+    `).join('') : '<div class="item">No items found</div>';
 
-    container.innerHTML = html || '<div class="item">No items found</div>';
     addEventListeners();
 }
 
+// Highlight matches
 function highlightMatches(text) {
     const searchTerm = document.getElementById('search').value.trim();
     if (!searchTerm || typeof text !== 'string') return text;
@@ -271,24 +336,23 @@ function highlightMatches(text) {
     }
 }
 
+// Event listeners
 function addEventListeners() {
     document.querySelectorAll('.folder').forEach(folder => {
         folder.addEventListener('click', (e) => {
             const path = folder.dataset.path;
-            log('Toggling folder:', path);
             const node = findNode(currentStructure, path);
-            
-            if (node && node.isFolder) {
+            if (node?.isFolder) {
                 node.isOpen = !node.isOpen;
-                renderTree();
+                renderItems();
             }
         });
     });
 }
 
+// Find node in structure
 function findNode(root, targetPath) {
     const normalizedTarget = normalizePath(targetPath);
-    
     function search(node) {
         if (normalizePath(node.path) === normalizedTarget) return node;
         if (node.children) {
@@ -297,47 +361,17 @@ function findNode(root, targetPath) {
                 if (found) return found;
             }
         }
-        return null;
     }
-    
     return search(root);
 }
 
-async function loadData() {
-    try {
-        const response = await fetch('movies.json');
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        
-        const data = await response.json();
-        if (!data.movies) throw new Error('Invalid data format');
-        
-        currentStructure = createStructure(data.movies);
-        
-        // Initialize Fuse.js with better options
-        const allItems = flattenStructure(currentStructure);
-        fuse = new Fuse(allItems, {
-            keys: ['name', 'path'],
-            threshold: 0.4,
-            includeScore: true,
-            minMatchCharLength: 2,
-            ignoreLocation: true
-        });
-        
-        document.getElementById('loading').style.display = 'none';
-        renderTree();
-    } catch (error) {
-        console.error('Error loading data:', error);
-        document.getElementById('loading').textContent = `Error: ${error.message}`;
-    }
-}
-
+// Search handler
 function handleSearch() {
     const searchTerm = document.getElementById('search').value.trim();
-    log('Searching for:', searchTerm);
-
     if (!searchTerm) {
+        currentStructure = createStructure(originalData);
         visibleItems = pageSize;
-        renderTree();
+        renderItems();
         return;
     }
 
@@ -345,41 +379,91 @@ function handleSearch() {
         .sort((a, b) => a.score - b.score)
         .map(result => result.item);
 
-    // Create virtual structure for search results
-    const searchRoot = {
+    currentStructure = {
         name: 'Search Results',
         path: '',
         children: results,
         isOpen: true,
         isFolder: true
     };
-
-    currentStructure = searchRoot;
+    
     visibleItems = Math.min(pageSize, results.length);
-    renderTree();
+    renderItems();
+}
+
+// Toggle view
+function toggleView() {
+    isTreeView = !isTreeView;
+    document.getElementById('toggleView').textContent = 
+        isTreeView ? 'Switch to List View' : 'Switch to Tree View';
+    
+    if (isTreeView) {
+        currentStructure = createStructure(originalData);
+    } else {
+        currentStructure = {
+            name: 'All Files',
+            path: '',
+            children: originalData.map(file => ({
+                ...file,
+                depth: 0,
+                isFolder: false
+            })),
+            isOpen: true,
+            isFolder: true
+        };
+    }
+    
+    fuse = new Fuse(flattenStructure(currentStructure), {
+        keys: ['name', 'path'],
+        threshold: 0.3,
+        minMatchCharLength: 2,
+        ignoreLocation: true
+    });
+    
+    visibleItems = pageSize;
+    renderItems();
+}
+
+// Initialize
+async function loadData() {
+    try {
+        const response = await fetch('movies.json');
+        const data = await response.json();
+        originalData = data.movies;
+        
+        currentStructure = createStructure(originalData);
+        fuse = new Fuse(flattenStructure(currentStructure), {
+            keys: ['name', 'path', 'extension'],
+            threshold: 0.4,
+            includeScore: true,
+            minMatchCharLength: 2,
+            ignoreLocation: true
+        });
+        
+        document.getElementById('loading').remove();
+        renderItems();
+    } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('loading').textContent = 'Failed to load data';
+    }
 }
 
 // Event listeners
 document.getElementById('search').addEventListener('input', () => {
-    clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(handleSearch, 300);
+    clearTimeout(this.searchTimeout);
+    this.searchTimeout = setTimeout(handleSearch, 300);
 });
 
-let isScrolling = false;
+document.getElementById('toggleView').addEventListener('click', toggleView);
+
 window.addEventListener('scroll', () => {
-    if (isScrolling) return;
-    isScrolling = true;
-    
-    const { scrollTop, clientHeight, scrollHeight } = document.documentElement;
-    if (scrollTop + clientHeight >= scrollHeight - 100) {
+    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100) {
         visibleItems = Math.min(visibleItems + pageSize, flattenStructure(currentStructure).length);
-        renderTree();
+        renderItems();
     }
-    
-    setTimeout(() => isScrolling = false, 100);
 });
 
-// Initialize
+// Start
 loadData();
 </script>
 </body>
