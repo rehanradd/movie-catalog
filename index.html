@@ -13,17 +13,10 @@
             --text-color: #2c3e50;
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
         body {
             font-family: 'Segoe UI', sans-serif;
             background-color: var(--background);
             color: var(--text-color);
-            line-height: 1.6;
             padding: 20px;
         }
 
@@ -32,94 +25,35 @@
             margin: 0 auto;
         }
 
-        .search-box {
-            margin-bottom: 30px;
-            position: relative;
-        }
-
-        #searchInput {
+        .search-box input {
             width: 100%;
-            padding: 15px 20px;
-            font-size: 18px;
+            padding: 12px;
             border: 2px solid #ddd;
-            border-radius: 30px;
+            border-radius: 8px;
+            font-size: 16px;
             outline: none;
-            transition: all 0.3s ease;
         }
 
-        #searchInput:focus {
-            border-color: var(--secondary-color);
-            box-shadow: 0 0 15px rgba(52, 152, 219, 0.2);
+        .folder {
+            background: #ecf0f1;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
         }
 
-        .media-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-        }
-
-        .media-item {
+        .folder .file {
+            margin-left: 20px;
             background: white;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: transform 0.2s ease;
-            position: relative;
+            padding: 8px;
+            border-radius: 6px;
+            margin-top: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
-        .media-item:hover {
-            transform: translateY(-5px);
-        }
-
-        .media-item.new::after {
-            content: 'New';
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: #27ae60;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-        }
-
-        .file-name {
-            color: var(--primary-color);
-            font-weight: 600;
-            margin-bottom: 8px;
-            font-size: 18px;
-        }
-
-        .file-path {
-            color: #7f8c8d;
-            font-size: 14px;
-            margin-bottom: 8px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .file-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 14px;
-            color: #95a5a6;
-        }
-
-        .file-size::before {
-            content: '📦 ';
-        }
-
-        .file-date::before {
-            content: '📅 ';
-        }
-
-        .no-results {
-            text-align: center;
-            color: #95a5a6;
-            padding: 40px;
-            font-size: 18px;
+        .hidden {
+            display: none;
         }
     </style>
 </head>
@@ -128,84 +62,71 @@
         <div class="search-box">
             <input type="text" id="searchInput" placeholder="Search files or folders...">
         </div>
-        <div id="resultsContainer" class="media-list"></div>
+        <div id="mediaContainer"></div>
     </div>
 
     <script>
-        let allMedia = [];
-        let fuse = null;
+        let mediaData = [];
+        let fuse;
+        let displayedItems = 40;
 
-        // Format file size
-        function formatSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        async function fetchMedia() {
+            const response = await fetch('movies.json');
+            const data = await response.json();
+            mediaData = data.movies;
+            renderFolders();
+            setupSearch();
         }
 
-        // Render media items
-        function renderMedia(items) {
-            const container = document.getElementById('resultsContainer');
-            if (items.length === 0) {
-                container.innerHTML = '<div class="no-results">No files found matching your search</div>';
-                return;
-            }
+        function renderFolders() {
+            const container = document.getElementById('mediaContainer');
+            container.innerHTML = '';
 
-            container.innerHTML = items.map(item => `
-                <div class="media-item ${item.is_new ? 'new' : ''}">
-                    <div class="file-name">${item.name}${item.extension}</div>
-                    <div class="file-path">${item.path}</div>
-                    <div class="file-info">
-                        <span class="file-size">${formatSize(item.size)}</span>
-                        <span class="file-date">${item.modified_date}</span>
-                    </div>
-                </div>
-            `).join('');
-        }
+            const folders = {};
+            mediaData.forEach(item => {
+                if (!folders[item.folder]) folders[item.folder] = [];
+                folders[item.folder].push(item);
+            });
 
-        // Initialize search
-        async function initSearch() {
-            try {
-                const response = await fetch('movies.json');
-                const data = await response.json();
-                allMedia = data.movies.sort((a, b) => 
-                    new Date(b.modified_date) - new Date(a.modified_date));
-                
-                // Initialize Fuse.js for fuzzy search
-                const options = {
-                    keys: ['name', 'path'],
-                    includeScore: true,
-                    threshold: 0.3,
-                    minMatchCharLength: 2
+            Object.keys(folders).sort((a, b) => b.localeCompare(a)).forEach(folder => {
+                const folderDiv = document.createElement('div');
+                folderDiv.className = 'folder';
+                folderDiv.textContent = folder;
+                folderDiv.onclick = () => {
+                    folderDiv.nextElementSibling.classList.toggle('hidden');
                 };
-                fuse = new Fuse(allMedia, options);
 
-                renderMedia(allMedia);
-                setupSearch();
-            } catch (error) {
-                console.error('Error loading data:', error);
-                resultsContainer.innerHTML = '<div class="no-results">Error loading media data</div>';
-            }
-        }
+                const filesDiv = document.createElement('div');
+                filesDiv.className = 'hidden';
+                folders[folder].sort((a, b) => a.name.localeCompare(b.name)).forEach(file => {
+                    const fileDiv = document.createElement('div');
+                    fileDiv.className = 'file';
+                    fileDiv.textContent = file.name;
+                    filesDiv.appendChild(fileDiv);
+                });
 
-        // Setup search input handler
-        function setupSearch() {
-            const searchInput = document.getElementById('searchInput');
-            searchInput.addEventListener('input', (e) => {
-                const query = e.target.value.trim();
-                if (query === '') {
-                    renderMedia(allMedia);
-                    return;
-                }
-                
-                const results = fuse.search(query);
-                renderMedia(results.map(result => result.item));
+                container.appendChild(folderDiv);
+                container.appendChild(filesDiv);
             });
         }
 
-        // Initial load
-        initSearch();
+        function setupSearch() {
+            fuse = new Fuse(mediaData, { keys: ['name', 'folder'], threshold: 0.3 });
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                const results = fuse.search(e.target.value);
+                mediaData = results.map(r => r.item);
+                renderFolders();
+            });
+        }
+
+        window.addEventListener('scroll', () => {
+            if (window.innerHeight + window.scrollY >= document.body.offsetHeight) {
+                displayedItems += 20;
+                renderFolders();
+            }
+        });
+
+        fetchMedia();
     </script>
 </body>
 </html>
