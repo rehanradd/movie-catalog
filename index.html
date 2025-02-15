@@ -6,8 +6,126 @@
     <title>Media Explorer</title>
     <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
     <style>
-        /* Keep all previous CSS styles */
-        /* Add this new rule to hide loading by default */
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --background: #f5f6fa;
+            --text-color: #2c3e50;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--background);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .search-box {
+            margin-bottom: 30px;
+            position: sticky;
+            top: 0;
+            background: var(--background);
+            z-index: 100;
+            padding: 10px 0;
+        }
+
+        #searchInput {
+            width: 100%;
+            padding: 15px 20px;
+            font-size: 18px;
+            border: 2px solid #ddd;
+            border-radius: 30px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .drive-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .drive-item, .folder-item {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .drive-item:hover, .folder-item:hover {
+            transform: translateX(5px);
+        }
+
+        .drive-header, .folder-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .drive-name, .folder-name {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .file-list {
+            padding-left: 20px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .file-item {
+            padding: 10px;
+            border-radius: 6px;
+            background: #f8f9fa;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .file-name {
+            flex: 1;
+            margin-right: 15px;
+        }
+
+        .file-info {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .file-size {
+            min-width: 80px;
+            text-align: right;
+        }
+
+        .new-indicator {
+            background: #27ae60;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #95a5a6;
+        }
         .loading {
             display: none;
         }
