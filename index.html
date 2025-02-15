@@ -6,6 +6,7 @@
     <title>Video Library</title>
     <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
     <style>
+        /* Previous CSS remains the same */
         :root {
             --primary: #2d2d2d;
             --secondary: #f8f9fa;
@@ -64,10 +65,6 @@
             border-radius: 4px;
             cursor: pointer;
             transition: opacity 0.2s;
-        }
-
-        .view-toggle:hover {
-            opacity: 0.9;
         }
 
         .file-tree {
@@ -152,18 +149,35 @@
     </div>
 
 <script>
+// Debugging flag
+const DEBUG = true;
+
 let allItems = [];
 let fuse = null;
-let isTreeView = true;
 const pageSize = 100;
 let visibleItems = pageSize;
 let flatStructure = [];
 
+function log(...messages) {
+    if(DEBUG) console.log(...messages);
+}
+
 function createStructure(movies) {
-    const structure = { name: 'Root', path: '', children: [], count: 0, isOpen: true };
+    log('Creating folder structure...');
+    const structure = { 
+        name: 'Root', 
+        path: '', 
+        children: [], 
+        count: 0, 
+        isOpen: true,
+        isFolder: true
+    };
     
     movies.forEach(movie => {
-        const pathParts = movie.path.split('\\').filter(p => p);
+        // Normalize path separators
+        const normalizedPath = movie.path.replace(/\//g, '\\');
+        const pathParts = normalizedPath.split('\\').filter(p => p);
+        
         let current = structure;
         
         pathParts.forEach((part, index) => {
@@ -182,9 +196,11 @@ function createStructure(movies) {
             current = child;
         });
         
+        // Add file to current folder
         current.children.push({
             ...movie,
-            isFolder: false
+            isFolder: false,
+            path: movie.path // Keep original path for files
         });
     });
 
@@ -196,11 +212,14 @@ function createStructure(movies) {
     }
     
     countFiles(structure);
+    log('Folder structure created:', structure);
     return structure;
 }
 
 function flattenStructure(node, depth = 0) {
     let items = [];
+    if (!node) return items;
+    
     if (node.isFolder) {
         items.push({ ...node, depth, isVisible: true });
         if (node.isOpen) {
@@ -213,12 +232,13 @@ function flattenStructure(node, depth = 0) {
 }
 
 function renderTree() {
+    log('Rendering tree...');
     const container = document.getElementById('fileTree');
     let html = '';
     let count = 0;
     
     flatStructure.slice(0, visibleItems).forEach(item => {
-        if (!item.isVisible) return;
+        if (!item || !item.isVisible) return;
         if (count++ >= visibleItems) return;
         
         html += `
@@ -233,14 +253,23 @@ function renderTree() {
     
     container.innerHTML = html;
     addEventListeners();
+    log('Rendered items:', count);
 }
 
 function highlightMatches(text) {
-    const searchTerm = document.getElementById('search').value.toLowerCase();
-    if (!searchTerm) return text;
+    const searchTerm = document.getElementById('search').value.trim();
+    if (!searchTerm || typeof text !== 'string') return text;
     
-    const regex = new RegExp(`(${searchTerm})`, 'gi');
-    return text.replace(regex, '<span class="highlight">$1</span>');
+    try {
+        const regex = new RegExp(`(${escapeRegExp(searchTerm)})`, 'gi');
+        return text.replace(regex, '<span class="highlight">$1</span>');
+    } catch(e) {
+        return text;
+    }
+}
+
+function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function addEventListeners() {
@@ -248,10 +277,13 @@ function addEventListeners() {
         folder.addEventListener('click', (e) => {
             if (e.target.classList.contains('item-count')) return;
             const path = folder.dataset.path;
+            log('Toggling folder:', path);
             const node = findNode(path);
-            node.isOpen = !node.isOpen;
-            flatStructure = flattenStructure(allItems);
-            renderTree();
+            if(node) {
+                node.isOpen = !node.isOpen;
+                flatStructure = flattenStructure(allItems);
+                renderTree();
+            }
         });
     });
 }
@@ -259,26 +291,38 @@ function addEventListeners() {
 function findNode(path) {
     function search(node) {
         if (node.path === path) return node;
-        for (const child of node.children) {
-            const found = search(child);
-            if (found) return found;
+        if (node.children) {
+            for (const child of node.children) {
+                const found = search(child);
+                if (found) return found;
+            }
         }
+        return null;
     }
     return search(allItems);
 }
 
 async function loadData() {
     try {
+        log('Loading data...');
         const response = await fetch('movies.json');
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
         const data = await response.json();
+        if(!data.movies || !Array.isArray(data.movies)) {
+            throw new Error('Invalid data format');
+        }
+        
         allItems = createStructure(data.movies);
         flatStructure = flattenStructure(allItems);
         
-        // Initialize Fuse.js
+        // Initialize Fuse.js with better options
         const options = {
             keys: ['name', 'path'],
             threshold: 0.4,
-            includeScore: true
+            includeScore: true,
+            minMatchCharLength: 2,
+            ignoreLocation: true
         };
         fuse = new Fuse(flatStructure, options);
         
@@ -286,12 +330,14 @@ async function loadData() {
         renderTree();
     } catch (error) {
         console.error('Error loading data:', error);
-        document.getElementById('loading').textContent = 'Error loading data';
+        document.getElementById('loading').textContent = `Error: ${error.message}`;
     }
 }
 
 function handleSearch() {
     const searchTerm = document.getElementById('search').value.trim();
+    log('Searching for:', searchTerm);
+    
     if (!searchTerm) {
         flatStructure = flattenStructure(allItems);
         visibleItems = pageSize;
@@ -303,38 +349,46 @@ function handleSearch() {
         .sort((a, b) => a.score - b.score)
         .map(result => result.item);
 
-    // Show first 200 matches initially
-    flatStructure = results;
-    visibleItems = Math.min(pageSize, results.length);
+    // Limit initial results
+    flatStructure = results.slice(0, 500);
+    visibleItems = Math.min(pageSize, flatStructure.length);
     renderTree();
 }
 
-// Debounce search
+// Debounce search with 300ms delay
 let searchTimeout;
 document.getElementById('search').addEventListener('input', () => {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(handleSearch, 300);
 });
 
-// Infinite scroll
+// Improved scroll handler
+let isScrolling = false;
 window.addEventListener('scroll', () => {
+    if (isScrolling) return;
+    isScrolling = true;
+    
     const { scrollTop, clientHeight, scrollHeight } = document.documentElement;
     if (scrollTop + clientHeight >= scrollHeight - 100) {
         visibleItems = Math.min(visibleItems + pageSize, flatStructure.length);
         renderTree();
     }
+    
+    setTimeout(() => isScrolling = false, 100);
 });
 
-// Toggle view
 document.getElementById('toggleView').addEventListener('click', () => {
-    isTreeView = !isTreeView;
-    document.getElementById('toggleView').textContent = 
-        isTreeView ? 'Tree View' : 'List View';
-    // Add list view handling if needed
+    alert('View toggle functionality not implemented yet');
 });
 
-// Initial load
+// Start loading data
 loadData();
+
+// Error handling for JSON loading
+window.addEventListener('error', (e) => {
+    console.error('Global error:', e.error);
+    document.getElementById('loading').textContent = `Error: ${e.message}`;
+});
 </script>
 </body>
 </html>
