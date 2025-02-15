@@ -143,7 +143,7 @@
     <script>
         let allFiles = [];
         let fuse = null;
-        
+
         // Hide loading initially
         document.getElementById('loading').style.display = 'none';
 
@@ -171,6 +171,29 @@
                 }
                 return new Date(b.modified_date) - new Date(a.modified_date);
             });
+        }
+
+        function groupFilesByFolder(files) {
+            const folders = new Map();
+
+            files.forEach(file => {
+                const folderPath = file.path;
+                if (!folders.has(folderPath)) {
+                    folders.set(folderPath, {
+                        path: folderPath,
+                        files: [],
+                        latestDate: new Date(file.modified_date),
+                        hasNew: file.is_new
+                    });
+                }
+
+                const folder = folders.get(folderPath);
+                folder.files.push(file);
+                folder.latestDate = Math.max(folder.latestDate, new Date(file.modified_date));
+                folder.hasNew = folder.hasNew || file.is_new;
+            });
+
+            return Array.from(folders.values());
         }
 
         function renderDrive(drive) {
