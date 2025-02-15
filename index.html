@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Movie Explorer</title>
+    <title>Simple Movie Explorer</title>
     <style>
         :root {
-            --bg-color: #1a1a1a;
-            --text-color: #ffffff;
-            --accent-color: #4a90e2;
-            --hover-color: #2d2d2d;
-            --sidebar-width: 280px;
+            --bg: #1a1a1a;
+            --text: #ffffff;
+            --accent: #4a90e2;
+            --card-bg: #2d2d2d;
         }
 
         * {
@@ -20,321 +19,318 @@
         }
 
         body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
+            font-family: Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
         }
 
-        /* Header Styles */
+        /* Header */
         .header {
             padding: 1rem;
-            background-color: #2d2d2d;
+            background: #252526;
             display: flex;
             gap: 1rem;
-            position: relative;
+            align-items: center;
         }
 
-        .search-bar {
-            flex: 1;
-            padding: 0.75rem;
-            background: #333;
+        .menu-btn {
+            background: none;
             border: none;
-            border-radius: 4px;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .search-box {
+            flex: 1;
+            padding: 0.8rem;
+            border: none;
+            border-radius: 5px;
+            background: #333;
             color: white;
             font-size: 1rem;
         }
 
-        .menu-toggle {
-            background: none;
-            border: none;
-            color: white;
-            cursor: pointer;
-            display: none;
-        }
-
-        /* Main Content Layout */
-        .main-container {
-            flex: 1;
+        /* Main Content */
+        .container {
             display: flex;
-            overflow: hidden;
+            min-height: 100vh;
         }
 
-        /* Sidebar Styles */
+        /* Sidebar */
         .sidebar {
-            width: var(--sidebar-width);
-            background-color: #252526;
+            width: 280px;
+            background: #252526;
             padding: 1rem;
-            overflow-y: auto;
-            transition: transform 0.3s ease;
+            transition: transform 0.3s;
         }
 
-        .sidebar.collapsed {
-            transform: translateX(calc(-1 * var(--sidebar-width)));
+        .sidebar.hidden {
+            transform: translateX(-100%);
         }
 
-        /* Watchlist Styles */
-        .watchlist-section {
-            margin-bottom: 2rem;
+        .watchlist-title {
+            margin: 1rem 0;
+            color: var(--accent);
         }
 
         .watchlist-item {
+            padding: 0.5rem;
+            background: var(--card-bg);
+            margin: 0.5rem 0;
+            border-radius: 5px;
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            padding: 0.5rem;
-            margin: 0.25rem 0;
-            background: #333;
-            border-radius: 4px;
         }
 
-        /* Main Content Area */
-        .content-area {
+        /* Main Area */
+        .main-area {
             flex: 1;
             padding: 1rem;
-            overflow-y: auto;
+            display: grid;
+            gap: 1rem;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
         }
 
-        /* Folder Structure Styles */
-        .folder {
-            margin-left: 1rem;
-        }
-
-        .folder-header {
+        .card {
+            background: var(--card-bg);
+            padding: 1rem;
+            border-radius: 10px;
             cursor: pointer;
-            padding: 0.5rem;
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: scale(1.02);
+        }
+
+        .folder-card {
+            background: #2d2d2d;
+        }
+
+        .card-title {
+            margin-bottom: 0.5rem;
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            transition: background 0.2s ease;
         }
 
-        .folder-header:hover {
-            background: var(--hover-color);
+        .card-info {
+            color: #888;
+            font-size: 0.9rem;
         }
 
-        .folder-contents {
-            margin-left: 1rem;
-            display: none;
-        }
-
-        .folder-contents.expanded {
-            display: block;
-        }
-
-        .movie-item {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 0.5rem;
-            cursor: pointer;
-            transition: background 0.2s ease;
-        }
-
-        .movie-item:hover {
-            background: var(--hover-color);
-        }
-
-        .save-btn {
-            margin-left: auto;
-            padding: 0.25rem 0.5rem;
-            background: var(--accent-color);
-            border: none;
-            border-radius: 4px;
-            color: white;
+        .load-more {
+            grid-column: 1 / -1;
+            padding: 1rem;
+            text-align: center;
+            background: var(--accent);
+            border-radius: 5px;
             cursor: pointer;
         }
 
-        /* Responsive Design */
+        /* Mobile Styles */
         @media (max-width: 768px) {
-            .menu-toggle {
-                display: block;
-            }
-
             .sidebar {
-                position: absolute;
-                height: calc(100vh - 60px);
+                position: fixed;
+                height: 100%;
                 z-index: 100;
             }
 
-            .sidebar.collapsed {
-                transform: translateX(-100%);
+            .main-area {
+                grid-template-columns: 1fr;
             }
         }
     </style>
 </head>
 <body>
     <header class="header">
-        <button class="menu-toggle">☰</button>
-        <input type="text" class="search-bar" placeholder="Search movies...">
+        <button class="menu-btn">☰</button>
+        <input type="text" class="search-box" placeholder="Search movies or folders...">
     </header>
 
-    <div class="main-container">
+    <div class="container">
         <aside class="sidebar">
-            <div class="watchlist-section">
-                <h2>Watchlist</h2>
-                <div class="watchlist-items"></div>
-            </div>
-            <div class="folder-structure"></div>
+            <h2 class="watchlist-title">My Watchlist</h2>
+            <div class="watchlist-items"></div>
         </aside>
 
-        <main class="content-area">
-            <div class="folder-container"></div>
+        <main class="main-area">
+            <!-- Content loaded dynamically -->
         </main>
     </div>
 
     <script>
-        // State management
-        let allMovies = [];
-        let folderStructure = {};
-        let watchlist = JSON.parse(localStorage.getItem('watchlist')) || [];
+        // Simple State Manager
+        const state = {
+            allItems: [],
+            visibleItems: [],
+            page: 1,
+            pageSize: 30,
+            watchlist: JSON.parse(localStorage.getItem('watchlist')) || []
+        };
 
         // DOM Elements
-        const sidebar = document.querySelector('.sidebar');
-        const menuToggle = document.querySelector('.menu-toggle');
-        const searchBar = document.querySelector('.search-bar');
-        const folderContainer = document.querySelector('.folder-container');
-        const watchlistItems = document.querySelector('.watchlist-items');
+        const elements = {
+            sidebar: document.querySelector('.sidebar'),
+            menuBtn: document.querySelector('.menu-btn'),
+            searchBox: document.querySelector('.search-box'),
+            mainArea: document.querySelector('.main-area'),
+            watchlistItems: document.querySelector('.watchlist-items')
+        };
 
         // Event Listeners
-        menuToggle.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
-        searchBar.addEventListener('input', debounce(handleSearch, 300));
+        elements.menuBtn.addEventListener('click', () => elements.sidebar.classList.toggle('hidden'));
+        elements.searchBox.addEventListener('input', simpleSearch);
 
         // Initialize
-        fetch('movies.json')
-            .then(response => response.json())
-            .then(data => {
-                allMovies = data.movies;
-                folderStructure = buildFolderStructure(allMovies);
-                renderFolderStructure(folderStructure);
-                renderWatchlist();
-            });
+        loadData();
 
-        // Folder structure functions
-        function buildFolderStructure(movies) {
-            const structure = {};
-            
-            movies.forEach(movie => {
-                const pathParts = movie.path.split('\\').filter(p => p);
-                let currentLevel = structure;
-                
-                pathParts.forEach((part, index) => {
-                    if (!currentLevel[part]) {
-                        currentLevel[part] = {
-                            name: part,
-                            type: 'folder',
-                            items: {},
-                            movies: []
-                        };
-                    }
-                    if (index === pathParts.length - 1) {
-                        currentLevel[part].movies.push(movie);
-                    }
-                    currentLevel = currentLevel[part].items;
-                });
-            });
-            
-            return structure;
-        }
-
-        function renderFolderStructure(structure, parentElement = folderContainer, level = 0) {
-            Object.values(structure).forEach(item => {
-                const folderElement = document.createElement('div');
-                folderElement.className = 'folder';
-                folderElement.innerHTML = `
-                    <div class="folder-header">
-                        <span>📁 ${item.name}</span>
-                    </div>
-                    <div class="folder-contents"></div>
-                `;
-
-                const header = folderElement.querySelector('.folder-header');
-                const contents = folderElement.querySelector('.folder-contents');
-
-                header.addEventListener('click', () => {
-                    contents.classList.toggle('expanded');
-                    if (contents.classList.contains('expanded')) {
-                        renderFolderStructure(item.items, contents, level + 1);
-                        renderMovies(item.movies, contents);
-                    }
-                });
-
-                parentElement.appendChild(folderElement);
-            });
-        }
-
-        function renderMovies(movies, parentElement) {
-            movies.forEach(movie => {
-                const movieElement = document.createElement('div');
-                movieElement.className = 'movie-item';
-                movieElement.innerHTML = `
-                    <span>🎬 ${movie.name}</span>
-                    <span class="movie-date">${movie.modified_date.split(' ')[0]}</span>
-                    <button class="save-btn">Save</button>
-                `;
-
-                movieElement.querySelector('.save-btn').addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    toggleWatchlist(movie);
-                });
-
-                parentElement.appendChild(movieElement);
-            });
-        }
-
-        // Watchlist functions
-        function toggleWatchlist(movie) {
-            const index = watchlist.findIndex(m => m.path === movie.path && m.name === movie.name);
-            if (index === -1) {
-                watchlist.push(movie);
-            } else {
-                watchlist.splice(index, 1);
+        async function loadData() {
+            try {
+                const response = await fetch('movies.json');
+                const data = await response.json();
+                state.allItems = processData(data.movies);
+                updateDisplay();
+            } catch (error) {
+                alert('Error loading movies. Please try again later.');
             }
-            localStorage.setItem('watchlist', JSON.stringify(watchlist));
-            renderWatchlist();
         }
 
-        function renderWatchlist() {
-            watchlistItems.innerHTML = watchlist
-                .map(movie => `
+        function processData(movies) {
+            const folders = new Map();
+
+            // Process folders
+            movies.forEach(movie => {
+                const path = movie.path.split('\\').filter(p => p);
+                let currentPath = '';
+                
+                path.forEach(folderName => {
+                    currentPath = currentPath ? `${currentPath}/${folderName}` : folderName;
+                    if (!folders.has(currentPath)) {
+                        folders.set(currentPath, {
+                            type: 'folder',
+                            name: folderName,
+                            path: currentPath,
+                            items: 0,
+                            size: 0,
+                            date: ''
+                        });
+                    }
+                    const folder = folders.get(currentPath);
+                    folder.items++;
+                    folder.size += movie.size;
+                    folder.date = movie.modified_date > folder.date ? movie.modified_date : folder.date;
+                });
+            });
+
+            // Combine folders and movies
+            return [...folders.values(), ...movies.map(m => ({ ...m, type: 'file' }))];
+        }
+
+        function updateDisplay() {
+            elements.mainArea.innerHTML = '';
+            const itemsToShow = state.visibleItems.slice(0, state.page * state.pageSize);
+            
+            itemsToShow.forEach(item => {
+                const card = createCard(item);
+                elements.mainArea.appendChild(card);
+            });
+
+            if (state.visibleItems.length > itemsToShow.length) {
+                const loadMore = document.createElement('div');
+                loadMore.className = 'load-more';
+                loadMore.textContent = 'Load More';
+                loadMore.onclick = () => {
+                    state.page++;
+                    updateDisplay();
+                };
+                elements.mainArea.appendChild(loadMore);
+            }
+        }
+
+        function createCard(item) {
+            const card = document.createElement('div');
+            card.className = `card ${item.type === 'folder' ? 'folder-card' : ''}`;
+            
+            card.innerHTML = `
+                <div class="card-title">
+                    ${item.type === 'folder' ? '📁' : '🎬'}
+                    ${item.name}
+                </div>
+                <div class="card-info">
+                    ${item.type === 'folder' ? 
+                        `${item.items} items • ${formatSize(item.size)}` : 
+                        `${formatDate(item.modified_date)} • ${formatSize(item.size)}`
+                    }
+                </div>
+                ${item.type === 'file' ? '<button class="save-btn">⭐</button>' : ''}
+            `;
+
+            if (item.type === 'file') {
+                card.querySelector('.save-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleWatchlist(item);
+                });
+            }
+
+            return card;
+        }
+
+        function toggleWatchlist(item) {
+            const index = state.watchlist.findIndex(i => i.path === item.path && i.name === item.name);
+            if (index === -1) {
+                state.watchlist.push(item);
+                alert('Added to watchlist!');
+            } else {
+                state.watchlist.splice(index, 1);
+                alert('Removed from watchlist!');
+            }
+            localStorage.setItem('watchlist', JSON.stringify(state.watchlist));
+            updateWatchlist();
+        }
+
+        function updateWatchlist() {
+            elements.watchlistItems.innerHTML = state.watchlist
+                .map(item => `
                     <div class="watchlist-item">
-                        <span>${movie.name}</span>
-                        <button class="remove-btn">×</button>
+                        ${item.name}
+                        <button onclick="removeFromWatchlist('${item.path}', '${item.name}')">×</button>
                     </div>
                 `).join('');
-
-            document.querySelectorAll('.remove-btn').forEach((btn, index) => {
-                btn.addEventListener('click', () => {
-                    watchlist.splice(index, 1);
-                    localStorage.setItem('watchlist', JSON.stringify(watchlist));
-                    renderWatchlist();
-                });
-            });
         }
 
-        // Search functionality
-        function handleSearch() {
-            const query = searchBar.value.toLowerCase();
-            const filtered = allMovies.filter(movie =>
-                movie.name.toLowerCase().includes(query) ||
-                movie.path.toLowerCase().includes(query) ||
-                movie.modified_date.toLowerCase().includes(query)
+        function simpleSearch() {
+            const query = elements.searchBox.value.toLowerCase();
+            state.visibleItems = state.allItems.filter(item =>
+                item.name.toLowerCase().includes(query) ||
+                (item.path && item.path.toLowerCase().includes(query))
             );
-            
-            folderContainer.innerHTML = '';
-            renderMovies(filtered, folderContainer);
+            state.page = 1;
+            updateDisplay();
         }
 
-        // Utility functions
-        function debounce(func, timeout = 300) {
-            let timer;
-            return (...args) => {
-                clearTimeout(timer);
-                timer = setTimeout(() => { func.apply(this, args); }, timeout);
-            };
+        // Helper functions
+        function formatSize(bytes) {
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            if (bytes === 0) return '0 B';
+            const i = Math.floor(Math.log(bytes) / Math.log(1024));
+            return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
         }
+
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString();
+        }
+
+        // Expose remove function for watchlist items
+        window.removeFromWatchlist = (path, name) => {
+            state.watchlist = state.watchlist.filter(item => 
+                !(item.path === path && item.name === name)
+            );
+            localStorage.setItem('watchlist', JSON.stringify(state.watchlist));
+            updateWatchlist();
+        };
     </script>
 </body>
 </html>
