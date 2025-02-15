@@ -3,20 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Movie Catalog Pro</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
+    <title>Movie Explorer</title>
     <style>
         :root {
-            --primary: #7c3aed;
-            --secondary: #a78bfa;
-            --background: #111827;
-            --surface: #1f2937;
-            --text: #f9fafb;
-            --border: #374151;
-            --success: #34d399;
-            --error: #f87171;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --bg-color: #1a1a1a;
+            --text-color: #ffffff;
+            --accent-color: #4a90e2;
+            --sidebar-width: 280px;
         }
 
         * {
@@ -26,243 +19,294 @@
         }
 
         body {
-            font-family: 'Segoe UI', system-ui;
-            background: var(--background);
-            color: var(--text);
-            line-height: 1.6;
-        }
-
-        .app-container {
-            display: grid;
-            grid-template-columns: 280px 1fr;
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
             min-height: 100vh;
         }
 
-        .sidebar {
-            background: var(--surface);
-            padding: 1.5rem;
-            border-right: 1px solid var(--border);
+        .container {
+            display: grid;
+            grid-template-columns: var(--sidebar-width) 1fr;
+            transition: margin 0.3s ease;
+        }
+
+        /* Header Styles */
+        .header {
+            grid-column: 1 / -1;
+            padding: 1rem;
+            background-color: #2d2d2d;
             position: sticky;
             top: 0;
-            height: 100vh;
-            overflow-y: auto;
+            z-index: 100;
         }
 
-        .main-content {
-            padding: 2rem;
+        .search-bar {
             width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .search-container {
-            margin-bottom: 2rem;
-        }
-
-        #search {
-            width: 100%;
-            padding: 1rem;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            color: var(--text);
-            border-radius: 8px;
+            padding: 0.8rem;
+            background: #333;
+            border: none;
+            border-radius: 4px;
+            color: white;
             font-size: 1rem;
         }
 
-        .movie-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 1.5rem;
+        /* Sidebar Styles */
+        .sidebar {
+            background-color: #252526;
+            height: calc(100vh - 60px);
+            overflow-y: auto;
+            position: fixed;
+            width: var(--sidebar-width);
+            transition: transform 0.3s ease;
         }
 
-        .movie-card {
-            background: var(--surface);
-            border-radius: 12px;
-            padding: 1.5rem;
-            border: 1px solid var(--border);
-            transition: var(--transition);
+        .sidebar.collapsed {
+            transform: translateX(-100%);
         }
 
-        .movie-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        /* Main Content Styles */
+        .main-content {
+            padding: 1rem;
+            margin-left: var(--sidebar-width);
+            transition: margin 0.3s ease;
         }
 
-        .movie-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: start;
-            margin-bottom: 1rem;
+        /* Folder Structure Styles */
+        .folder-structure {
+            list-style: none;
+            padding-left: 1rem;
         }
 
-        .movie-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-right: 1rem;
-        }
-
-        .movie-path {
-            color: var(--secondary);
-            font-size: 0.9rem;
-            margin-bottom: 0.5rem;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .movie-details {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.9rem;
-            color: #94a3b8;
-        }
-
-        .watchlist-btn {
-            background: none;
-            border: 1px solid var(--primary);
-            color: var(--text);
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
+        .folder-item {
+            margin: 0.5rem 0;
             cursor: pointer;
-            transition: var(--transition);
         }
 
-        .watchlist-btn.saved {
-            background: var(--primary);
-            border-color: var(--primary);
+        .folder-header {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            border-radius: 4px;
         }
 
+        .folder-header:hover {
+            background-color: #2a2d2e;
+        }
+
+        .folder-icon {
+            margin-right: 0.5rem;
+        }
+
+        .movie-item {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            margin-left: 1rem;
+            border-radius: 4px;
+        }
+
+        .movie-item:hover {
+            background-color: #2a2d2e;
+        }
+
+        .save-btn {
+            margin-left: auto;
+            padding: 0.25rem 0.5rem;
+            background-color: var(--accent-color);
+            border: none;
+            border-radius: 4px;
+            color: white;
+            cursor: pointer;
+        }
+
+        /* Watchlist Styles */
+        .watchlist {
+            padding: 1rem;
+        }
+
+        .watchlist-item {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            margin: 0.5rem 0;
+            background-color: #333;
+            border-radius: 4px;
+        }
+
+        /* Mobile Styles */
         @media (max-width: 768px) {
-            .app-container {
+            .container {
                 grid-template-columns: 1fr;
             }
+
             .sidebar {
-                display: none;
+                transform: translateX(-100%);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
             }
         }
     </style>
 </head>
 <body>
-    <div class="app-container">
-        <aside class="sidebar">
-            <h2>📽 Your Watchlist</h2>
-            <div class="watchlist-section" id="watchlistItems"></div>
+    <div class="container">
+        <header class="header">
+            <input type="text" class="search-bar" placeholder="Search movies..." id="searchInput">
+        </header>
+        
+        <aside class="sidebar" id="sidebar">
+            <div class="watchlist">
+                <h3>Watchlist</h3>
+                <div id="watchlistContainer"></div>
+            </div>
         </aside>
 
-        <main class="main-content">
-            <div class="search-container">
-                <input type="text" id="search" placeholder="Search movies...">
-            </div>
-            <div class="movie-grid" id="results"></div>
-            <div id="loader" class="loader">Loading...</div>
+        <main class="main-content" id="mainContent">
+            <div id="folderStructure"></div>
         </main>
     </div>
 
-<script>
-let allMovies = [];
-let fuse = null;
-let watchlist = JSON.parse(localStorage.getItem('watchlist')) || [];
+    <script>
+        // State management
+        let movieData = [];
+        let folderStructure = {};
+        let watchlist = JSON.parse(localStorage.getItem('watchlist')) || [];
 
-async function loadData() {
-    try {
-        const response = await fetch('movies.json');
-        const data = await response.json();
-        allMovies = data.movies.sort((a, b) => 
-            new Date(b.modified_date) - new Date(a.modified_date));
-        
-        initializeSearch();
-        renderMovies(allMovies);
-        updateWatchlist();
-    } catch (error) {
-        console.error('Error loading data:', error);
-    }
-}
+        // DOM Elements
+        const sidebar = document.getElementById('sidebar');
+        const searchInput = document.getElementById('searchInput');
+        const folderStructureContainer = document.getElementById('folderStructure');
+        const watchlistContainer = document.getElementById('watchlistContainer');
 
-function initializeSearch() {
-    fuse = new Fuse(allMovies, {
-        keys: ['name', 'path'],
-        threshold: 0.3,
-        includeScore: true
-    });
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Load movie data
+            const response = await fetch('movies.json');
+            movieData = await response.json();
+            
+            // Build folder structure
+            buildFolderStructure();
+            renderFolderStructure();
+            renderWatchlist();
+        });
 
-    document.getElementById('search').addEventListener('input', (e) => {
-        const query = e.target.value;
-        if (query.length > 0) {
-            const results = fuse.search(query);
-            renderMovies(results.map(r => r.item));
-        } else {
-            renderMovies(allMovies);
+        // Build hierarchical folder structure
+        function buildFolderStructure() {
+            folderStructure = {};
+            movieData.forEach(movie => {
+                const pathSegments = movie.path.split('\\').filter(seg => seg);
+                let currentLevel = folderStructure;
+                
+                pathSegments.forEach(segment => {
+                    if (!currentLevel[segment]) {
+                        currentLevel[segment] = { items: [], children: {} };
+                    }
+                    currentLevel = currentLevel[segment].children;
+                });
+                
+                currentLevel.items = currentLevel.items || [];
+                currentLevel.items.push(movie);
+            });
         }
-    });
-}
 
-function formatSize(bytes) {
-    if (!bytes) return '0 B';
-    const units = ['B', 'KB', 'MB', 'GB'];
-    let size = bytes;
-    let unitIndex = 0;
-    while (size >= 1024 && unitIndex < units.length - 1) {
-        size /= 1024;
-        unitIndex++;
-    }
-    return `${size.toFixed(1)} ${units[unitIndex]}`;
-}
+        // Render folder structure
+        function renderFolderStructure(node = folderStructure, level = 0) {
+            let html = '<ul class="folder-structure">';
+            
+            Object.entries(node).forEach(([name, data]) => {
+                const hasChildren = Object.keys(data.children).length > 0;
+                
+                html += `
+                    <li class="folder-item">
+                        <div class="folder-header" onclick="toggleFolder(this)">
+                            <span class="folder-icon">${hasChildren ? '📁' : '📂'}</span>
+                            ${name}
+                        </div>
+                        ${hasChildren ? renderFolderStructure(data.children, level + 1) : ''}
+                        ${renderMovies(data.items)}
+                    </li>
+                `;
+            });
+            
+            html += '</ul>';
+            return html;
+        }
 
-function renderMovies(movies) {
-    const container = document.getElementById('results');
-    container.innerHTML = movies.map(movie => `
-        <div class="movie-card">
-            <div class="movie-header">
-                <div>
-                    <div class="movie-title">${movie.name}${movie.extension}</div>
-                    <div class="movie-path">${movie.path}</div>
+        // Render movies list
+        function renderMovies(movies) {
+            if (!movies) return '';
+            return `
+                <ul class="movie-list">
+                    ${movies.map(movie => `
+                        <li class="movie-item">
+                            <span>🎬 ${movie.name}</span>
+                            <button class="save-btn" onclick="toggleWatchlist('${movie.name}')">
+                                ${watchlist.some(m => m.name === movie.name) ? 'Remove' : 'Save'}
+                            </button>
+                        </li>
+                    `).join('')}
+                </ul>
+            `;
+        }
+
+        // Toggle folder expansion
+        function toggleFolder(element) {
+            const listItem = element.parentElement;
+            listItem.classList.toggle('collapsed');
+        }
+
+        // Watchlist functionality
+        function toggleWatchlist(movieName) {
+            const movie = movieData.find(m => m.name === movieName);
+            const index = watchlist.findIndex(m => m.name === movieName);
+            
+            if (index > -1) {
+                watchlist.splice(index, 1);
+            } else {
+                watchlist.push(movie);
+            }
+            
+            localStorage.setItem('watchlist', JSON.stringify(watchlist));
+            renderFolderStructure();
+            renderWatchlist();
+        }
+
+        // Render watchlist
+        function renderWatchlist() {
+            watchlistContainer.innerHTML = watchlist.map(movie => `
+                <div class="watchlist-item">
+                    <span>🎬 ${movie.name}</span>
+                    <button class="save-btn" onclick="toggleWatchlist('${movie.name}')">
+                        Remove
+                    </button>
                 </div>
-                <button class="watchlist-btn ${watchlist.some(m => m.path === movie.path && m.name === movie.name) ? 'saved' : ''}" 
-                        onclick="toggleWatchlist('${movie.name}', '${movie.path}')">
-                    ${watchlist.some(m => m.path === movie.path && m.name === movie.name) ? '★ Saved' : '☆ Save'}
-                </button>
-            </div>
-            <div class="movie-details">
-                <span>${movie.modified_date.split(' ')[0]}</span>
-                <span>${formatSize(movie.size)}</span>
-            </div>
-        </div>
-    `).join('');
-}
+            `).join('');
+        }
 
-function toggleWatchlist(name, path) {
-    const index = watchlist.findIndex(item => item.name === name && item.path === path);
-    if (index === -1) {
-        watchlist.push({ name, path });
-    } else {
-        watchlist.splice(index, 1);
-    }
-    localStorage.setItem('watchlist', JSON.stringify(watchlist));
-    renderMovies(allMovies);
-    updateWatchlist();
-}
+        // Search functionality
+        searchInput.addEventListener('input', debounce(() => {
+            const searchTerm = searchInput.value.toLowerCase();
+            const filtered = movieData.filter(movie => 
+                movie.name.toLowerCase().includes(searchTerm)
+            );
+            
+            folderStructureContainer.innerHTML = renderMovies(filtered);
+        }, 300));
 
-function updateWatchlist() {
-    const container = document.getElementById('watchlistItems');
-    container.innerHTML = watchlist.map(item => `
-        <div class="watchlist-item">
-            <div>${item.name}</div>
-            <button class="remove-btn" onclick="removeFromWatchlist('${item.name}', '${item.path}')">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-    `).join('');
-}
-
-function removeFromWatchlist(name, path) {
-    watchlist = watchlist.filter(item => !(item.name === name && item.path === path));
-    localStorage.setItem('watchlist', JSON.stringify(watchlist));
-    updateWatchlist();
-    renderMovies(allMovies);
-}
-
-loadData();
-</script>
+        // Utility functions
+        function debounce(func, wait) {
+            let timeout;
+            return (...args) => {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+    </script>
 </body>
-</html>
+    </html>
