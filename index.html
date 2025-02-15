@@ -6,7 +6,7 @@
     <title>Video Library</title>
     <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
     <style>
-        /* Previous CSS remains the same */
+        /* CSS remains the same as previous version */
         :root {
             --primary: #2d2d2d;
             --secondary: #f8f9fa;
@@ -151,41 +151,41 @@
 <script>
 // Debugging flag
 const DEBUG = true;
-
-let allItems = [];
+let allItems = null;
 let fuse = null;
 const pageSize = 100;
 let visibleItems = pageSize;
-let flatStructure = [];
+let currentStructure = null;
 
 function log(...messages) {
     if(DEBUG) console.log(...messages);
 }
 
+function normalizePath(path) {
+    return path.replace(/\\/g, '/').replace(/\/+/g, '/').replace(/^\/|\/$/g, '');
+}
+
 function createStructure(movies) {
     log('Creating folder structure...');
-    const structure = { 
+    const root = { 
         name: 'Root', 
-        path: '', 
+        path: '',
         children: [], 
         count: 0, 
         isOpen: true,
-        isFolder: true
+        isFolder: true 
     };
-    
+
     movies.forEach(movie => {
-        // Normalize path separators
-        const normalizedPath = movie.path.replace(/\//g, '\\');
-        const pathParts = normalizedPath.split('\\').filter(p => p);
-        
-        let current = structure;
-        
+        const pathParts = normalizePath(movie.path).split('/');
+        let current = root;
+
         pathParts.forEach((part, index) => {
             let child = current.children.find(c => c.name === part);
-            if (!child) {
+            if (!child && part) {
                 child = {
                     name: part,
-                    path: pathParts.slice(0, index + 1).join('\\'),
+                    path: pathParts.slice(0, index + 1).join('/'),
                     children: [],
                     count: 0,
                     isOpen: false,
@@ -193,14 +193,15 @@ function createStructure(movies) {
                 };
                 current.children.push(child);
             }
-            current = child;
+            if (child) current = child;
         });
-        
-        // Add file to current folder
+
+        // Add the file
         current.children.push({
             ...movie,
-            isFolder: false,
-            path: movie.path // Keep original path for files
+            name: movie.name,
+            path: movie.path,
+            isFolder: false
         });
     });
 
@@ -210,37 +211,39 @@ function createStructure(movies) {
         node.count = node.children.reduce((sum, child) => sum + countFiles(child), 0);
         return node.count;
     }
-    
-    countFiles(structure);
-    log('Folder structure created:', structure);
-    return structure;
+
+    countFiles(root);
+    log('Folder structure created:', root);
+    return root;
 }
 
 function flattenStructure(node, depth = 0) {
-    let items = [];
-    if (!node) return items;
-    
+    if (!node) return [];
+    const items = [];
+
     if (node.isFolder) {
         items.push({ ...node, depth, isVisible: true });
         if (node.isOpen) {
             node.children.forEach(child => {
-                items = items.concat(flattenStructure(child, depth + 1));
+                items.push(...flattenStructure(child, depth + 1));
             });
         }
+    } else {
+        items.push({ ...node, depth, isVisible: true });
     }
+
     return items;
 }
 
 function renderTree() {
     log('Rendering tree...');
     const container = document.getElementById('fileTree');
+    if (!currentStructure) return;
+
+    const itemsToShow = flattenStructure(currentStructure).slice(0, visibleItems);
     let html = '';
-    let count = 0;
-    
-    flatStructure.slice(0, visibleItems).forEach(item => {
-        if (!item || !item.isVisible) return;
-        if (count++ >= visibleItems) return;
-        
+
+    itemsToShow.forEach(item => {
         html += `
             <div class="item ${item.isFolder ? 'folder' : 'file'}" 
                  style="padding-left: ${item.depth * 20}px"
@@ -250,47 +253,44 @@ function renderTree() {
             </div>
         `;
     });
-    
-    container.innerHTML = html;
+
+    container.innerHTML = html || '<div class="item">No items found</div>';
     addEventListeners();
-    log('Rendered items:', count);
 }
 
 function highlightMatches(text) {
     const searchTerm = document.getElementById('search').value.trim();
     if (!searchTerm || typeof text !== 'string') return text;
-    
+
     try {
-        const regex = new RegExp(`(${escapeRegExp(searchTerm)})`, 'gi');
+        const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const regex = new RegExp(`(${escapedTerm})`, 'gi');
         return text.replace(regex, '<span class="highlight">$1</span>');
     } catch(e) {
         return text;
     }
 }
 
-function escapeRegExp(string) {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
 function addEventListeners() {
     document.querySelectorAll('.folder').forEach(folder => {
         folder.addEventListener('click', (e) => {
-            if (e.target.classList.contains('item-count')) return;
             const path = folder.dataset.path;
             log('Toggling folder:', path);
-            const node = findNode(path);
-            if(node) {
+            const node = findNode(currentStructure, path);
+            
+            if (node && node.isFolder) {
                 node.isOpen = !node.isOpen;
-                flatStructure = flattenStructure(allItems);
                 renderTree();
             }
         });
     });
 }
 
-function findNode(path) {
+function findNode(root, targetPath) {
+    const normalizedTarget = normalizePath(targetPath);
+    
     function search(node) {
-        if (node.path === path) return node;
+        if (normalizePath(node.path) === normalizedTarget) return node;
         if (node.children) {
             for (const child of node.children) {
                 const found = search(child);
@@ -299,32 +299,29 @@ function findNode(path) {
         }
         return null;
     }
-    return search(allItems);
+    
+    return search(root);
 }
 
 async function loadData() {
     try {
-        log('Loading data...');
         const response = await fetch('movies.json');
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         
         const data = await response.json();
-        if(!data.movies || !Array.isArray(data.movies)) {
-            throw new Error('Invalid data format');
-        }
+        if (!data.movies) throw new Error('Invalid data format');
         
-        allItems = createStructure(data.movies);
-        flatStructure = flattenStructure(allItems);
+        currentStructure = createStructure(data.movies);
         
         // Initialize Fuse.js with better options
-        const options = {
+        const allItems = flattenStructure(currentStructure);
+        fuse = new Fuse(allItems, {
             keys: ['name', 'path'],
             threshold: 0.4,
             includeScore: true,
             minMatchCharLength: 2,
             ignoreLocation: true
-        };
-        fuse = new Fuse(flatStructure, options);
+        });
         
         document.getElementById('loading').style.display = 'none';
         renderTree();
@@ -337,9 +334,8 @@ async function loadData() {
 function handleSearch() {
     const searchTerm = document.getElementById('search').value.trim();
     log('Searching for:', searchTerm);
-    
+
     if (!searchTerm) {
-        flatStructure = flattenStructure(allItems);
         visibleItems = pageSize;
         renderTree();
         return;
@@ -349,20 +345,26 @@ function handleSearch() {
         .sort((a, b) => a.score - b.score)
         .map(result => result.item);
 
-    // Limit initial results
-    flatStructure = results.slice(0, 500);
-    visibleItems = Math.min(pageSize, flatStructure.length);
+    // Create virtual structure for search results
+    const searchRoot = {
+        name: 'Search Results',
+        path: '',
+        children: results,
+        isOpen: true,
+        isFolder: true
+    };
+
+    currentStructure = searchRoot;
+    visibleItems = Math.min(pageSize, results.length);
     renderTree();
 }
 
-// Debounce search with 300ms delay
-let searchTimeout;
+// Event listeners
 document.getElementById('search').addEventListener('input', () => {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(handleSearch, 300);
 });
 
-// Improved scroll handler
 let isScrolling = false;
 window.addEventListener('scroll', () => {
     if (isScrolling) return;
@@ -370,25 +372,15 @@ window.addEventListener('scroll', () => {
     
     const { scrollTop, clientHeight, scrollHeight } = document.documentElement;
     if (scrollTop + clientHeight >= scrollHeight - 100) {
-        visibleItems = Math.min(visibleItems + pageSize, flatStructure.length);
+        visibleItems = Math.min(visibleItems + pageSize, flattenStructure(currentStructure).length);
         renderTree();
     }
     
     setTimeout(() => isScrolling = false, 100);
 });
 
-document.getElementById('toggleView').addEventListener('click', () => {
-    alert('View toggle functionality not implemented yet');
-});
-
-// Start loading data
+// Initialize
 loadData();
-
-// Error handling for JSON loading
-window.addEventListener('error', (e) => {
-    console.error('Global error:', e.error);
-    document.getElementById('loading').textContent = `Error: ${e.message}`;
-});
 </script>
 </body>
 </html>
