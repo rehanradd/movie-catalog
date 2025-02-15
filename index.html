@@ -152,10 +152,29 @@
                 margin-left: 0;
             }
         }
+        .menu-toggle {
+    display: none;
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 1000;
+    background: var(--accent-color);
+    border: none;
+    color: white;
+    padding: 0.5rem;
+    border-radius: 4px;
+}
+
+@media (max-width: 768px) {
+    .menu-toggle {
+        display: block;
+    }
+}
     </style>
 </head>
 <body>
     <div class="container">
+        <button class="menu-toggle" onclick="sidebar.classList.toggle('active')">☰</button>
         <header class="header">
             <input type="text" class="search-bar" placeholder="Search movies..." id="searchInput">
         </header>
