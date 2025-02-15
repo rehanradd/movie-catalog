@@ -3,334 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Movie Explorer</title>
+    <title>Movie Explorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root {
-            --bg: #1a1a1a;
-            --text: #ffffff;
-            --accent: #4a90e2;
-            --card-bg: #2d2d2d;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: Arial, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            line-height: 1.6;
-        }
-
-        /* Header */
-        .header {
-            padding: 1rem;
-            background: #252526;
-            display: flex;
-            gap: 1rem;
-            align-items: center;
-        }
-
-        .menu-btn {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.5rem;
-            cursor: pointer;
-        }
-
-        .search-box {
-            flex: 1;
-            padding: 0.8rem;
-            border: none;
-            border-radius: 5px;
-            background: #333;
-            color: white;
-            font-size: 1rem;
-        }
-
-        /* Main Content */
-        .container {
-            display: flex;
-            min-height: 100vh;
-        }
-
-        /* Sidebar */
-        .sidebar {
-            width: 280px;
-            background: #252526;
-            padding: 1rem;
-            transition: transform 0.3s;
-        }
-
-        .sidebar.hidden {
-            transform: translateX(-100%);
-        }
-
-        .watchlist-title {
-            margin: 1rem 0;
-            color: var(--accent);
-        }
-
-        .watchlist-item {
-            padding: 0.5rem;
-            background: var(--card-bg);
-            margin: 0.5rem 0;
-            border-radius: 5px;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        /* Main Area */
-        .main-area {
-            flex: 1;
-            padding: 1rem;
-            display: grid;
-            gap: 1rem;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-        }
-
-        .card {
-            background: var(--card-bg);
-            padding: 1rem;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-
-        .card:hover {
-            transform: scale(1.02);
-        }
-
-        .folder-card {
-            background: #2d2d2d;
-        }
-
-        .card-title {
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .card-info {
-            color: #888;
-            font-size: 0.9rem;
-        }
-
-        .load-more {
-            grid-column: 1 / -1;
-            padding: 1rem;
-            text-align: center;
-            background: var(--accent);
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        /* Mobile Styles */
-        @media (max-width: 768px) {
-            .sidebar {
-                position: fixed;
-                height: 100%;
-                z-index: 100;
-            }
-
-            .main-area {
-                grid-template-columns: 1fr;
-            }
-        }
+        body { background-color: #1a1a1a; color: white; }
+        .folder > div { cursor: pointer; padding: 5px; }
+        .folder-content { display: none; padding-left: 15px; }
+        .active { display: block !important; }
+        .watchlist-item { display: flex; justify-content: space-between; padding: 5px 10px; }
     </style>
 </head>
-<body>
-    <header class="header">
-        <button class="menu-btn">☰</button>
-        <input type="text" class="search-box" placeholder="Search movies or folders...">
-    </header>
+<body class="flex h-screen">
+    
+    <!-- Sidebar -->
+    <div id="sidebar" class="w-64 bg-gray-900 text-white p-3 space-y-4">
+        <h2 class="text-lg font-bold">🎬 Movie Explorer</h2>
+        <input id="search" type="text" placeholder="Search movies..." class="w-full p-2 rounded bg-gray-800 border-none text-white">
+        
+        <!-- Movie Folder List -->
+        <div id="folder-list" class="mt-2"></div>
 
-    <div class="container">
-        <aside class="sidebar">
-            <h2 class="watchlist-title">My Watchlist</h2>
-            <div class="watchlist-items"></div>
-        </aside>
+        <!-- Watchlist -->
+        <h2 class="text-lg font-bold mt-4">⭐ Watchlist</h2>
+        <div id="watchlist" class="space-y-2"></div>
+    </div>
 
-        <main class="main-area">
-            <!-- Content loaded dynamically -->
-        </main>
+    <!-- Main Content -->
+    <div class="flex-1 p-5 overflow-auto">
+        <h1 class="text-2xl font-bold">Movies</h1>
+        <div id="movies-container" class="mt-4"></div>
     </div>
 
     <script>
-        // Simple State Manager
-        const state = {
-            allItems: [],
-            visibleItems: [],
-            page: 1,
-            pageSize: 30,
-            watchlist: JSON.parse(localStorage.getItem('watchlist')) || []
-        };
+        const moviesJsonPath = "movies.json"; // Change this path if needed
 
-        // DOM Elements
-        const elements = {
-            sidebar: document.querySelector('.sidebar'),
-            menuBtn: document.querySelector('.menu-btn'),
-            searchBox: document.querySelector('.search-box'),
-            mainArea: document.querySelector('.main-area'),
-            watchlistItems: document.querySelector('.watchlist-items')
-        };
-
-        // Event Listeners
-        elements.menuBtn.addEventListener('click', () => elements.sidebar.classList.toggle('hidden'));
-        elements.searchBox.addEventListener('input', simpleSearch);
-
-        // Initialize
-        loadData();
-
-        async function loadData() {
-            try {
-                const response = await fetch('movies.json');
-                const data = await response.json();
-                state.allItems = processData(data.movies);
-                updateDisplay();
-            } catch (error) {
-                alert('Error loading movies. Please try again later.');
-            }
+        // Fetch movie data
+        async function loadMovies() {
+            const response = await fetch(moviesJsonPath);
+            const data = await response.json();
+            return data.movies;
         }
 
-        function processData(movies) {
-            const folders = new Map();
-
-            // Process folders
+        // Convert movie list into a folder structure
+        function buildMovieTree(movies) {
+            const tree = {};
             movies.forEach(movie => {
-                const path = movie.path.split('\\').filter(p => p);
-                let currentPath = '';
-                
-                path.forEach(folderName => {
-                    currentPath = currentPath ? `${currentPath}/${folderName}` : folderName;
-                    if (!folders.has(currentPath)) {
-                        folders.set(currentPath, {
-                            type: 'folder',
-                            name: folderName,
-                            path: currentPath,
-                            items: 0,
-                            size: 0,
-                            date: ''
-                        });
-                    }
-                    const folder = folders.get(currentPath);
-                    folder.items++;
-                    folder.size += movie.size;
-                    folder.date = movie.modified_date > folder.date ? movie.modified_date : folder.date;
+                const pathParts = movie.path.split("\\");
+                let current = tree;
+                pathParts.forEach((part, index) => {
+                    if (!current[part]) current[part] = index === pathParts.length - 1 ? [] : {};
+                    if (index === pathParts.length - 1) current[part].push(movie);
+                    current = current[part];
                 });
             });
-
-            // Combine folders and movies
-            return [...folders.values(), ...movies.map(m => ({ ...m, type: 'file' }))];
+            return tree;
         }
 
-        function updateDisplay() {
-            elements.mainArea.innerHTML = '';
-            const itemsToShow = state.visibleItems.slice(0, state.page * state.pageSize);
-            
-            itemsToShow.forEach(item => {
-                const card = createCard(item);
-                elements.mainArea.appendChild(card);
+        // Render folder structure
+        function renderFolderTree(folder, parentElement) {
+            Object.keys(folder).forEach(folderName => {
+                const folderDiv = document.createElement("div");
+                folderDiv.className = "folder";
+
+                const titleDiv = document.createElement("div");
+                titleDiv.innerHTML = "📂 " + folderName;
+                titleDiv.onclick = () => contentDiv.classList.toggle("active");
+
+                const contentDiv = document.createElement("div");
+                contentDiv.className = "folder-content";
+
+                if (Array.isArray(folder[folderName])) {
+                    folder[folderName].forEach(movie => {
+                        const movieDiv = document.createElement("div");
+                        movieDiv.className = "p-2 hover:bg-gray-700 rounded";
+                        movieDiv.innerHTML = `🎥 ${movie.name} <button class="ml-2 text-yellow-400" onclick="addToWatchlist('${movie.name}')">⭐</button>`;
+                        contentDiv.appendChild(movieDiv);
+                    });
+                } else {
+                    renderFolderTree(folder[folderName], contentDiv);
+                }
+
+                folderDiv.appendChild(titleDiv);
+                folderDiv.appendChild(contentDiv);
+                parentElement.appendChild(folderDiv);
             });
-
-            if (state.visibleItems.length > itemsToShow.length) {
-                const loadMore = document.createElement('div');
-                loadMore.className = 'load-more';
-                loadMore.textContent = 'Load More';
-                loadMore.onclick = () => {
-                    state.page++;
-                    updateDisplay();
-                };
-                elements.mainArea.appendChild(loadMore);
-            }
         }
 
-        function createCard(item) {
-            const card = document.createElement('div');
-            card.className = `card ${item.type === 'folder' ? 'folder-card' : ''}`;
-            
-            card.innerHTML = `
-                <div class="card-title">
-                    ${item.type === 'folder' ? '📁' : '🎬'}
-                    ${item.name}
-                </div>
-                <div class="card-info">
-                    ${item.type === 'folder' ? 
-                        `${item.items} items • ${formatSize(item.size)}` : 
-                        `${formatDate(item.modified_date)} • ${formatSize(item.size)}`
-                    }
-                </div>
-                ${item.type === 'file' ? '<button class="save-btn">⭐</button>' : ''}
-            `;
-
-            if (item.type === 'file') {
-                card.querySelector('.save-btn').addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    toggleWatchlist(item);
-                });
-            }
-
-            return card;
+        // Add movie to watchlist (localStorage)
+        function addToWatchlist(movieName) {
+            let watchlist = JSON.parse(localStorage.getItem("watchlist")) || [];
+            if (!watchlist.includes(movieName)) watchlist.push(movieName);
+            localStorage.setItem("watchlist", JSON.stringify(watchlist));
+            renderWatchlist();
         }
 
-        function toggleWatchlist(item) {
-            const index = state.watchlist.findIndex(i => i.path === item.path && i.name === item.name);
-            if (index === -1) {
-                state.watchlist.push(item);
-                alert('Added to watchlist!');
-            } else {
-                state.watchlist.splice(index, 1);
-                alert('Removed from watchlist!');
-            }
-            localStorage.setItem('watchlist', JSON.stringify(state.watchlist));
-            updateWatchlist();
+        // Remove movie from watchlist
+        function removeFromWatchlist(movieName) {
+            let watchlist = JSON.parse(localStorage.getItem("watchlist")) || [];
+            watchlist = watchlist.filter(m => m !== movieName);
+            localStorage.setItem("watchlist", JSON.stringify(watchlist));
+            renderWatchlist();
         }
 
-        function updateWatchlist() {
-            elements.watchlistItems.innerHTML = state.watchlist
-                .map(item => `
-                    <div class="watchlist-item">
-                        ${item.name}
-                        <button onclick="removeFromWatchlist('${item.path}', '${item.name}')">×</button>
-                    </div>
-                `).join('');
+        // Display watchlist
+        function renderWatchlist() {
+            const watchlistContainer = document.getElementById("watchlist");
+            watchlistContainer.innerHTML = "";
+            let watchlist = JSON.parse(localStorage.getItem("watchlist")) || [];
+
+            watchlist.forEach(movie => {
+                const movieItem = document.createElement("div");
+                movieItem.className = "watchlist-item bg-gray-800 rounded p-2";
+                movieItem.innerHTML = `
+                    ${movie}
+                    <button class="text-red-400" onclick="removeFromWatchlist('${movie}')">❌</button>
+                `;
+                watchlistContainer.appendChild(movieItem);
+            });
         }
 
-        function simpleSearch() {
-            const query = elements.searchBox.value.toLowerCase();
-            state.visibleItems = state.allItems.filter(item =>
-                item.name.toLowerCase().includes(query) ||
-                (item.path && item.path.toLowerCase().includes(query))
-            );
-            state.page = 1;
-            updateDisplay();
-        }
+        // Search functionality
+        document.getElementById("search").addEventListener("input", function() {
+            const query = this.value.toLowerCase();
+            const allMovies = document.querySelectorAll(".folder-content div");
+            allMovies.forEach(movie => {
+                movie.style.display = movie.innerText.toLowerCase().includes(query) ? "block" : "none";
+            });
+        });
 
-        // Helper functions
-        function formatSize(bytes) {
-            const sizes = ['B', 'KB', 'MB', 'GB'];
-            if (bytes === 0) return '0 B';
-            const i = Math.floor(Math.log(bytes) / Math.log(1024));
-            return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
-        }
-
-        function formatDate(dateString) {
-            return new Date(dateString).toLocaleDateString();
-        }
-
-        // Expose remove function for watchlist items
-        window.removeFromWatchlist = (path, name) => {
-            state.watchlist = state.watchlist.filter(item => 
-                !(item.path === path && item.name === name)
-            );
-            localStorage.setItem('watchlist', JSON.stringify(state.watchlist));
-            updateWatchlist();
-        };
+        // Load and render movies
+        (async function init() {
+            const movies = await loadMovies();
+            const movieTree = buildMovieTree(movies);
+            renderFolderTree(movieTree, document.getElementById("folder-list"));
+            renderWatchlist();
+        })();
     </script>
 </body>
 </html>
