@@ -7,10 +7,10 @@
     <style>
         :root {
             --primary: #2d3748;
-            --secondary: #1a202c;
+            --secondary: #f7fafc;
             --accent: #4299e1;
-            --highlight: #48bb78;
-            --text: #cbd5e0;
+            --highlight: #c6f6d5;
+            --text: #4a5568;
         }
 
         * {
@@ -33,102 +33,93 @@
         }
 
         .header {
-            background: #2d3748;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
+            background: var(--primary);
+            color: white;
+            padding: 1rem;
+            margin-bottom: 1rem;
         }
 
-        .search-container {
-            margin-bottom: 1.5rem;
-            position: relative;
-        }
-
-        #search {
+        .search-box {
             width: 100%;
             padding: 1rem;
-            background: #2d3748;
-            border: 2px solid #4a5568;
+            margin-bottom: 1rem;
+            border: 2px solid #e2e8f0;
             border-radius: 8px;
-            color: white;
             font-size: 1rem;
         }
 
         .folder-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
             gap: 1rem;
         }
 
         .folder-card {
-            background: #2d3748;
+            background: white;
             border-radius: 8px;
-            padding: 1.5rem;
-            position: relative;
+            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             cursor: pointer;
             transition: transform 0.2s;
+            position: relative;
         }
 
         .folder-card:hover {
-            transform: translateY(-3px);
+            transform: translateY(-2px);
         }
 
         .folder-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
         }
 
         .folder-name {
-            font-size: 1.1rem;
-            font-weight: 500;
+            font-weight: 600;
+            color: var(--primary);
         }
 
         .file-count {
-            background: #4299e1;
+            background: var(--accent);
             color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
+            padding: 2px 8px;
+            border-radius: 12px;
             font-size: 0.9rem;
         }
 
-        .file-list {
-            margin-top: 1rem;
-        }
-
-        .file-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.5rem 0;
-            border-bottom: 1px solid #4a5568;
+        .folder-path {
+            color: #718096;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
         }
 
         .new-badge {
             background: #48bb78;
             color: white;
             padding: 2px 8px;
-            border-radius: 4px;
+            border-radius: 12px;
             font-size: 0.8rem;
-            margin-left: 8px;
+            position: absolute;
+            top: 8px;
+            right: 8px;
         }
 
-        .folder-path {
-            color: #a0aec0;
-            font-size: 0.9rem;
-            margin-top: 0.5rem;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+        .breadcrumb {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
         }
 
-        .highlight {
-            background: rgba(72, 187, 120, 0.3);
+        .breadcrumb-item {
+            color: var(--accent);
+            cursor: pointer;
         }
 
         @media (max-width: 768px) {
             .container {
-                padding: 15px;
+                padding: 10px;
             }
             
             .folder-grid {
@@ -145,20 +136,20 @@
     </div>
 
     <div class="container">
-        <div class="search-container">
-            <input type="text" id="search" placeholder="Search folders or files...">
-        </div>
+        <input type="text" class="search-box" placeholder="Search folders..." id="searchInput">
+        <div class="breadcrumb" id="breadcrumb"></div>
         <div class="folder-grid" id="folderGrid"></div>
-        <div class="loading" id="loading">Loading folders...</div>
+        <div id="loading">Loading...</div>
     </div>
 
 <script>
 class FolderManager {
     constructor() {
-        this.folders = new Map();
+        this.allFolders = new Map();
+        this.currentPath = [];
         this.searchTerm = '';
-        this.visibleItems = 50;
         this.pageSize = 50;
+        this.visibleItems = this.pageSize;
         this.init();
     }
 
@@ -173,130 +164,132 @@ class FolderManager {
         try {
             const response = await fetch('movies.json');
             const data = await response.json();
-            this.processData(data.movies);
+            this.processFiles(data.movies);
         } catch (error) {
             console.error('Error:', error);
             document.getElementById('loading').textContent = 'Failed to load data';
         }
     }
 
-    processData(files) {
-        const now = new Date();
-        
+    processFiles(files) {
         files.forEach(file => {
-            const folderPath = this.getFolderPath(file.path);
-            const modifiedDate = new Date(file.modified_date);
-            const isNew = (now - modifiedDate) < 86400000; // 24 hours
+            const pathParts = file.path.split('\\').filter(p => p);
+            let currentPath = '';
             
-            if (!this.folders.has(folderPath)) {
-                this.folders.set(folderPath, {
-                    path: folderPath,
-                    files: [],
-                    latestDate: modifiedDate,
-                    hasNewFiles: false
-                });
-            }
-            
-            const folder = this.folders.get(folderPath);
-            folder.files.push({...file, isNew});
-            
-            if (modifiedDate > folder.latestDate) {
-                folder.latestDate = modifiedDate;
-            }
-            
-            if (isNew) folder.hasNewFiles = true;
+            pathParts.forEach((part, index) => {
+                currentPath = currentPath ? `${currentPath}\\${part}` : part;
+                if (!this.allFolders.has(currentPath)) {
+                    this.allFolders.set(currentPath, {
+                        name: part,
+                        path: currentPath,
+                        files: [],
+                        subfolders: [],
+                        lastModified: file.modified_date,
+                        fileCount: 0,
+                        isNew: this.isNew(file.modified_date)
+                    });
+                }
+                
+                const folder = this.allFolders.get(currentPath);
+                if (index === pathParts.length - 1) {
+                    folder.files.push({
+                        ...file,
+                        isNew: this.isNew(file.modified_date)
+                    });
+                }
+                folder.fileCount++;
+                if (new Date(file.modified_date) > new Date(folder.lastModified)) {
+                    folder.lastModified = file.modified_date;
+                }
+            });
         });
     }
 
-    getFolderPath(fullPath) {
-        return fullPath.split('\\').slice(0, -1).join('\\');
+    isNew(dateString) {
+        const fileDate = new Date(dateString);
+        const hoursDiff = (Date.now() - fileDate) / (1000 * 60 * 60);
+        return hoursDiff < 24;
     }
 
-    searchFolders(term) {
-        const results = [];
-        const searchLower = term.toLowerCase();
-        
-        this.folders.forEach(folder => {
-            const folderMatch = folder.path.toLowerCase().includes(searchLower);
-            const fileMatch = folder.files.some(file => 
-                file.name.toLowerCase().includes(searchLower)
+    getCurrentFolders() {
+        const currentPath = this.currentPath.join('\\');
+        let folders = Array.from(this.allFolders.values())
+            .filter(folder => {
+                const parentPath = folder.path.split('\\').slice(0, -1).join('\\');
+                return parentPath === currentPath;
+            });
+
+        if (this.searchTerm) {
+            const searchLower = this.searchTerm.toLowerCase();
+            folders = folders.filter(folder => 
+                folder.name.toLowerCase().includes(searchLower) ||
+                folder.path.toLowerCase().includes(searchLower)
             );
-            
-            if (folderMatch || fileMatch) {
-                results.push({
-                    ...folder,
-                    files: folder.files.filter(file => 
-                        file.name.toLowerCase().includes(searchLower) ||
-                        folder.path.toLowerCase().includes(searchLower)
-                    )
-                });
-            }
-        });
-        
-        return results.sort((a, b) => b.latestDate - a.latestDate);
+        }
+
+        return folders.sort((a, b) => 
+            new Date(b.lastModified) - new Date(a.lastModified)
+        );
     }
 
     renderFolders() {
-        const filtered = this.searchFolders(this.searchTerm);
+        const folders = this.getCurrentFolders();
         const grid = document.getElementById('folderGrid');
-        grid.innerHTML = '';
+        grid.innerHTML = folders.slice(0, this.visibleItems).map(folder => `
+            <div class="folder-card" data-path="${folder.path}">
+                ${this.isNew(folder.lastModified) ? '<div class="new-badge">New</div>' : ''}
+                <div class="folder-header">
+                    <div class="folder-name">${folder.name}</div>
+                    <div class="file-count">${folder.fileCount}</div>
+                </div>
+                <div class="folder-path">${folder.path}</div>
+            </div>
+        `).join('');
+
+        this.renderBreadcrumb();
+    }
+
+    renderBreadcrumb() {
+        const breadcrumb = document.getElementById('breadcrumb');
+        const pathParts = this.currentPath;
+        let currentPath = '';
         
-        filtered.slice(0, this.visibleItems).forEach(folder => {
-            const card = this.createFolderCard(folder);
-            grid.appendChild(card);
+        const items = pathParts.map((part, index) => {
+            currentPath = currentPath ? `${currentPath}\\${part}` : part;
+            return `<span class="breadcrumb-item" data-path="${currentPath}">${part}</span>`;
         });
-    }
-
-    createFolderCard(folder) {
-        const card = document.createElement('div');
-        card.className = 'folder-card';
-        card.innerHTML = `
-            <div class="folder-header">
-                <div class="folder-name">${this.highlightMatches(folder.path.split('\\').pop())}</div>
-                <div class="file-count">${folder.files.length}</div>
-            </div>
-            <div class="folder-path">${folder.path}</div>
-            <div class="file-list">
-                ${folder.files.slice(0, 3).map(file => `
-                    <div class="file-item">
-                        <div>${this.highlightMatches(file.name)}</div>
-                        ${file.isNew ? '<div class="new-badge">New</div>' : ''}
-                    </div>
-                `).join('')}
-                ${folder.files.length > 3 ? 
-                    `<div class="file-item" style="color: #a0aec0;">+ ${folder.files.length - 3} more files</div>` : ''}
-            </div>
-        `;
-
-        card.addEventListener('click', () => {
-            // Implement folder expand/collapse logic here
-            console.log('Folder clicked:', folder.path);
-        });
-
-        if (folder.hasNewFiles) {
-            card.style.borderLeft = '4px solid var(--highlight)';
-        }
-
-        return card;
-    }
-
-    highlightMatches(text) {
-        if (!this.searchTerm) return text;
-        return text.replace(
-            new RegExp(`(${this.searchTerm})`, 'gi'),
-            '<span class="highlight">$1</span>'
-        );
+        
+        breadcrumb.innerHTML = ['Root', ...items].join(' › ');
     }
 
     setupEventListeners() {
         let searchTimeout;
-        document.getElementById('search').addEventListener('input', (e) => {
+        document.getElementById('searchInput').addEventListener('input', (e) => {
             this.searchTerm = e.target.value;
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
+                this.currentPath = [];
                 this.visibleItems = this.pageSize;
                 this.renderFolders();
             }, 300);
+        });
+
+        document.getElementById('folderGrid').addEventListener('click', (e) => {
+            const folderCard = e.target.closest('.folder-card');
+            if (folderCard) {
+                const path = folderCard.dataset.path;
+                this.currentPath = path.split('\\');
+                this.renderFolders();
+            }
+        });
+
+        document.getElementById('breadcrumb').addEventListener('click', (e) => {
+            const breadcrumbItem = e.target.closest('.breadcrumb-item');
+            if (breadcrumbItem) {
+                const path = breadcrumbItem.dataset.path || '';
+                this.currentPath = path ? path.split('\\') : [];
+                this.renderFolders();
+            }
         });
 
         window.addEventListener('scroll', () => {
@@ -313,7 +306,6 @@ class FolderManager {
     }
 }
 
-// Initialize the folder manager
 new FolderManager();
 </script>
 </body>
