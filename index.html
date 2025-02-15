@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Library Explorer</title>
+    <title>Video Library Manager</title>
     <style>
         :root {
             --primary: #2d3748;
-            --secondary: #f7fafc;
-            --accent: #4a5568;
-            --highlight: #c6f6d5;
-            --text: #4a5568;
+            --secondary: #1a202c;
+            --accent: #4299e1;
+            --highlight: #48bb78;
+            --text: #cbd5e0;
         }
 
         * {
@@ -21,8 +21,8 @@
         }
 
         body {
-            background: #1a202c;
-            color: #cbd5e0;
+            background: var(--secondary);
+            color: var(--text);
             line-height: 1.6;
         }
 
@@ -36,135 +36,126 @@
             background: #2d3748;
             padding: 1.5rem;
             margin-bottom: 2rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
         .search-container {
-            display: flex;
-            gap: 15px;
             margin-bottom: 1.5rem;
+            position: relative;
         }
 
         #search {
-            flex: 1;
+            width: 100%;
             padding: 1rem;
             background: #2d3748;
             border: 2px solid #4a5568;
             border-radius: 8px;
             color: white;
             font-size: 1rem;
-            transition: all 0.2s;
         }
 
-        #search:focus {
-            border-color: #4299e1;
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
-        }
-
-        .view-toggle {
-            background: #4299e1;
-            color: white;
-            border: none;
-            padding: 0.8rem 1.5rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: transform 0.1s;
-        }
-
-        .results-grid {
+        .folder-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 1rem;
         }
 
-        .item {
+        .folder-card {
             background: #2d3748;
             border-radius: 8px;
-            padding: 1rem;
-            transition: transform 0.2s;
-            cursor: pointer;
+            padding: 1.5rem;
             position: relative;
+            cursor: pointer;
+            transition: transform 0.2s;
         }
 
-        .item:hover {
+        .folder-card:hover {
             transform: translateY(-3px);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
-        .folder {
-            border-left: 4px solid #4299e1;
-        }
-
-        .file {
-            border-left: 4px solid #48bb78;
-        }
-
-        .item-header {
+        .folder-header {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 0.5rem;
+            margin-bottom: 1rem;
         }
 
-        .item-icon {
-            font-size: 1.2em;
-        }
-
-        .item-name {
+        .folder-name {
+            font-size: 1.1rem;
             font-weight: 500;
-            word-break: break-word;
         }
 
-        .item-path {
-            color: #a0aec0;
-            font-size: 0.9em;
-            margin-bottom: 0.5rem;
+        .file-count {
+            background: #4299e1;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
         }
 
-        .item-details {
+        .file-list {
+            margin-top: 1rem;
+        }
+
+        .file-item {
             display: flex;
-            gap: 1rem;
-            font-size: 0.85em;
-            color: #718096;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #4a5568;
         }
 
-        .loading {
-            text-align: center;
-            padding: 2rem;
-            color: #718096;
-            font-size: 1.1em;
+        .new-badge {
+            background: #48bb78;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-left: 8px;
+        }
+
+        .folder-path {
+            color: #a0aec0;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .highlight {
-            background: rgba(198, 246, 213, 0.3);
-            padding: 0 2px;
-            border-radius: 2px;
+            background: rgba(72, 187, 120, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .folder-grid {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
 <body>
     <div class="header">
         <div class="container">
-            <h1>📁 Video Library Explorer</h1>
+            <h1>📁 Video Library</h1>
         </div>
     </div>
 
     <div class="container">
         <div class="search-container">
-            <input type="text" id="search" placeholder="Search files and folders...">
-            <button class="view-toggle" id="toggleView">📃 List View</button>
+            <input type="text" id="search" placeholder="Search folders or files...">
         </div>
-        <div class="results-grid" id="resultsGrid"></div>
-        <div class="loading" id="loading">Loading library contents...</div>
+        <div class="folder-grid" id="folderGrid"></div>
+        <div class="loading" id="loading">Loading folders...</div>
     </div>
 
 <script>
-class LibraryExplorer {
+class FolderManager {
     constructor() {
-        this.originalData = [];
-        this.currentView = 'tree';
+        this.folders = new Map();
         this.searchTerm = '';
         this.visibleItems = 50;
         this.pageSize = 50;
@@ -174,7 +165,7 @@ class LibraryExplorer {
     async init() {
         await this.loadData();
         this.setupEventListeners();
-        this.renderResults();
+        this.renderFolders();
         document.getElementById('loading').remove();
     }
 
@@ -182,92 +173,119 @@ class LibraryExplorer {
         try {
             const response = await fetch('movies.json');
             const data = await response.json();
-            this.originalData = this.enhanceData(data.movies);
+            this.processData(data.movies);
         } catch (error) {
-            console.error('Error loading data:', error);
+            console.error('Error:', error);
             document.getElementById('loading').textContent = 'Failed to load data';
         }
     }
 
-    enhanceData(items) {
-        return items.map(item => ({
-            ...item,
-            isFolder: false,
-            folderPath: this.getFolderPath(item.path),
-            fileName: item.name,
-            extension: item.name.split('.').pop().toLowerCase()
-        }));
+    processData(files) {
+        const now = new Date();
+        
+        files.forEach(file => {
+            const folderPath = this.getFolderPath(file.path);
+            const modifiedDate = new Date(file.modified_date);
+            const isNew = (now - modifiedDate) < 86400000; // 24 hours
+            
+            if (!this.folders.has(folderPath)) {
+                this.folders.set(folderPath, {
+                    path: folderPath,
+                    files: [],
+                    latestDate: modifiedDate,
+                    hasNewFiles: false
+                });
+            }
+            
+            const folder = this.folders.get(folderPath);
+            folder.files.push({...file, isNew});
+            
+            if (modifiedDate > folder.latestDate) {
+                folder.latestDate = modifiedDate;
+            }
+            
+            if (isNew) folder.hasNewFiles = true;
+        });
     }
 
     getFolderPath(fullPath) {
         return fullPath.split('\\').slice(0, -1).join('\\');
     }
 
-    customSearch(items, term) {
-        if (!term) return items;
-        const searchWords = term.toLowerCase().split(' ');
+    searchFolders(term) {
+        const results = [];
+        const searchLower = term.toLowerCase();
         
-        return items.filter(item => {
-            const searchContent = [
-                item.name?.toLowerCase(),
-                item.path?.toLowerCase(),
-                ...(item.isFolder ? [] : [item.extension])
-            ].join(' ');
-            
-            return searchWords.every(word => 
-                searchContent.includes(word)
+        this.folders.forEach(folder => {
+            const folderMatch = folder.path.toLowerCase().includes(searchLower);
+            const fileMatch = folder.files.some(file => 
+                file.name.toLowerCase().includes(searchLower)
             );
+            
+            if (folderMatch || fileMatch) {
+                results.push({
+                    ...folder,
+                    files: folder.files.filter(file => 
+                        file.name.toLowerCase().includes(searchLower) ||
+                        folder.path.toLowerCase().includes(searchLower)
+                    )
+                });
+            }
         });
-    }
-
-    renderResults() {
-        const results = this.customSearch(this.originalData, this.searchTerm);
-        const grid = document.getElementById('resultsGrid');
-        grid.innerHTML = '';
-
-        results.slice(0, this.visibleItems).forEach(item => {
-            const element = this.createItemElement(item);
-            grid.appendChild(element);
-        });
-    }
-
-    createItemElement(item) {
-        const div = document.createElement('div');
-        div.className = `item ${item.isFolder ? 'folder' : 'file'}`;
         
-        const highlightedName = this.highlightMatches(item.name);
-        const highlightedPath = this.highlightMatches(item.path);
+        return results.sort((a, b) => b.latestDate - a.latestDate);
+    }
 
-        div.innerHTML = `
-            <div class="item-header">
-                <span class="item-icon">${item.isFolder ? '📁' : '📄'}</span>
-                <div class="item-name">${highlightedName}</div>
+    renderFolders() {
+        const filtered = this.searchFolders(this.searchTerm);
+        const grid = document.getElementById('folderGrid');
+        grid.innerHTML = '';
+        
+        filtered.slice(0, this.visibleItems).forEach(folder => {
+            const card = this.createFolderCard(folder);
+            grid.appendChild(card);
+        });
+    }
+
+    createFolderCard(folder) {
+        const card = document.createElement('div');
+        card.className = 'folder-card';
+        card.innerHTML = `
+            <div class="folder-header">
+                <div class="folder-name">${this.highlightMatches(folder.path.split('\\').pop())}</div>
+                <div class="file-count">${folder.files.length}</div>
             </div>
-            <div class="item-path">${highlightedPath}</div>
-            ${!item.isFolder ? `
-            <div class="item-details">
-                <span>${this.formatSize(item.size)}</span>
-                <span>${item.extension}</span>
-                <span>${item.modified_date}</span>
-            </div>` : ''}
+            <div class="folder-path">${folder.path}</div>
+            <div class="file-list">
+                ${folder.files.slice(0, 3).map(file => `
+                    <div class="file-item">
+                        <div>${this.highlightMatches(file.name)}</div>
+                        ${file.isNew ? '<div class="new-badge">New</div>' : ''}
+                    </div>
+                `).join('')}
+                ${folder.files.length > 3 ? 
+                    `<div class="file-item" style="color: #a0aec0;">+ ${folder.files.length - 3} more files</div>` : ''}
+            </div>
         `;
 
-        return div;
+        card.addEventListener('click', () => {
+            // Implement folder expand/collapse logic here
+            console.log('Folder clicked:', folder.path);
+        });
+
+        if (folder.hasNewFiles) {
+            card.style.borderLeft = '4px solid var(--highlight)';
+        }
+
+        return card;
     }
 
     highlightMatches(text) {
         if (!this.searchTerm) return text;
         return text.replace(
-            new RegExp(`(${this.searchTerm.split(' ').join('|')})`, 'gi'),
+            new RegExp(`(${this.searchTerm})`, 'gi'),
             '<span class="highlight">$1</span>'
         );
-    }
-
-    formatSize(bytes) {
-        if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(1)} GB`;
-        if (bytes >= 1e6) return `${(bytes / 1e6).toFixed(1)} MB`;
-        if (bytes >= 1e3) return `${(bytes / 1e3).toFixed(0)} KB`;
-        return `${bytes} B`;
     }
 
     setupEventListeners() {
@@ -277,21 +295,14 @@ class LibraryExplorer {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
                 this.visibleItems = this.pageSize;
-                this.renderResults();
+                this.renderFolders();
             }, 300);
-        });
-
-        document.getElementById('toggleView').addEventListener('click', () => {
-            this.currentView = this.currentView === 'tree' ? 'list' : 'tree';
-            document.getElementById('toggleView').textContent = 
-                `${this.currentView === 'tree' ? '📃 List' : '📁 Tree'} View`;
-            this.renderResults();
         });
 
         window.addEventListener('scroll', () => {
             if (this.shouldLoadMore()) {
                 this.visibleItems += this.pageSize;
-                this.renderResults();
+                this.renderFolders();
             }
         });
     }
@@ -302,8 +313,8 @@ class LibraryExplorer {
     }
 }
 
-// Initialize the explorer
-new LibraryExplorer();
+// Initialize the folder manager
+new FolderManager();
 </script>
 </body>
 </html>
