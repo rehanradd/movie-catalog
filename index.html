@@ -9,6 +9,7 @@
             --bg-color: #1a1a1a;
             --text-color: #ffffff;
             --accent-color: #4a90e2;
+            --hover-color: #2d2d2d;
             --sidebar-width: 280px;
         }
 
@@ -19,31 +20,26 @@
         }
 
         body {
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Segoe UI', system-ui, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
-            min-height: 100vh;
-        }
-
-        .container {
-            display: grid;
-            grid-template-columns: var(--sidebar-width) 1fr;
-            transition: margin 0.3s ease;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
         /* Header Styles */
         .header {
-            grid-column: 1 / -1;
             padding: 1rem;
             background-color: #2d2d2d;
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            display: flex;
+            gap: 1rem;
+            position: relative;
         }
 
         .search-bar {
-            width: 100%;
-            padding: 0.8rem;
+            flex: 1;
+            padding: 0.75rem;
             background: #333;
             border: none;
             border-radius: 4px;
@@ -51,281 +47,294 @@
             font-size: 1rem;
         }
 
+        .menu-toggle {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: none;
+        }
+
+        /* Main Content Layout */
+        .main-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
         /* Sidebar Styles */
         .sidebar {
-            background-color: #252526;
-            height: calc(100vh - 60px);
-            overflow-y: auto;
-            position: fixed;
             width: var(--sidebar-width);
+            background-color: #252526;
+            padding: 1rem;
+            overflow-y: auto;
             transition: transform 0.3s ease;
         }
 
         .sidebar.collapsed {
-            transform: translateX(-100%);
+            transform: translateX(calc(-1 * var(--sidebar-width)));
         }
 
-        /* Main Content Styles */
-        .main-content {
-            padding: 1rem;
-            margin-left: var(--sidebar-width);
-            transition: margin 0.3s ease;
+        /* Watchlist Styles */
+        .watchlist-section {
+            margin-bottom: 2rem;
         }
 
-        /* Folder Structure Styles */
-        .folder-structure {
-            list-style: none;
-            padding-left: 1rem;
-        }
-
-        .folder-item {
-            margin: 0.5rem 0;
-            cursor: pointer;
-        }
-
-        .folder-header {
+        .watchlist-item {
             display: flex;
+            justify-content: space-between;
             align-items: center;
             padding: 0.5rem;
+            margin: 0.25rem 0;
+            background: #333;
             border-radius: 4px;
         }
 
-        .folder-header:hover {
-            background-color: #2a2d2e;
+        /* Main Content Area */
+        .content-area {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
         }
 
-        .folder-icon {
-            margin-right: 0.5rem;
+        /* Folder Structure Styles */
+        .folder {
+            margin-left: 1rem;
+        }
+
+        .folder-header {
+            cursor: pointer;
+            padding: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: background 0.2s ease;
+        }
+
+        .folder-header:hover {
+            background: var(--hover-color);
+        }
+
+        .folder-contents {
+            margin-left: 1rem;
+            display: none;
+        }
+
+        .folder-contents.expanded {
+            display: block;
         }
 
         .movie-item {
             display: flex;
             align-items: center;
+            gap: 1rem;
             padding: 0.5rem;
-            margin-left: 1rem;
-            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s ease;
         }
 
         .movie-item:hover {
-            background-color: #2a2d2e;
+            background: var(--hover-color);
         }
 
         .save-btn {
             margin-left: auto;
             padding: 0.25rem 0.5rem;
-            background-color: var(--accent-color);
+            background: var(--accent-color);
             border: none;
             border-radius: 4px;
             color: white;
             cursor: pointer;
         }
 
-        /* Watchlist Styles */
-        .watchlist {
-            padding: 1rem;
-        }
-
-        .watchlist-item {
-            display: flex;
-            align-items: center;
-            padding: 0.5rem;
-            margin: 0.5rem 0;
-            background-color: #333;
-            border-radius: 4px;
-        }
-
-        /* Mobile Styles */
+        /* Responsive Design */
         @media (max-width: 768px) {
-            .container {
-                grid-template-columns: 1fr;
+            .menu-toggle {
+                display: block;
             }
 
             .sidebar {
+                position: absolute;
+                height: calc(100vh - 60px);
+                z-index: 100;
+            }
+
+            .sidebar.collapsed {
                 transform: translateX(-100%);
             }
-
-            .sidebar.active {
-                transform: translateX(0);
-            }
-
-            .main-content {
-                margin-left: 0;
-            }
         }
-        .menu-toggle {
-    display: none;
-    position: fixed;
-    top: 1rem;
-    left: 1rem;
-    z-index: 1000;
-    background: var(--accent-color);
-    border: none;
-    color: white;
-    padding: 0.5rem;
-    border-radius: 4px;
-}
-
-@media (max-width: 768px) {
-    .menu-toggle {
-        display: block;
-    }
-}
     </style>
 </head>
 <body>
-    <div class="container">
-        <button class="menu-toggle" onclick="sidebar.classList.toggle('active')">☰</button>
-        <header class="header">
-            <input type="text" class="search-bar" placeholder="Search movies..." id="searchInput">
-        </header>
-        
-        <aside class="sidebar" id="sidebar">
-            <div class="watchlist">
-                <h3>Watchlist</h3>
-                <div id="watchlistContainer"></div>
+    <header class="header">
+        <button class="menu-toggle">☰</button>
+        <input type="text" class="search-bar" placeholder="Search movies...">
+    </header>
+
+    <div class="main-container">
+        <aside class="sidebar">
+            <div class="watchlist-section">
+                <h2>Watchlist</h2>
+                <div class="watchlist-items"></div>
             </div>
+            <div class="folder-structure"></div>
         </aside>
 
-        <main class="main-content" id="mainContent">
-            <div id="folderStructure"></div>
+        <main class="content-area">
+            <div class="folder-container"></div>
         </main>
     </div>
 
     <script>
         // State management
-        let movieData = [];
+        let allMovies = [];
         let folderStructure = {};
         let watchlist = JSON.parse(localStorage.getItem('watchlist')) || [];
 
         // DOM Elements
-        const sidebar = document.getElementById('sidebar');
-        const searchInput = document.getElementById('searchInput');
-        const folderStructureContainer = document.getElementById('folderStructure');
-        const watchlistContainer = document.getElementById('watchlistContainer');
+        const sidebar = document.querySelector('.sidebar');
+        const menuToggle = document.querySelector('.menu-toggle');
+        const searchBar = document.querySelector('.search-bar');
+        const folderContainer = document.querySelector('.folder-container');
+        const watchlistItems = document.querySelector('.watchlist-items');
 
-        // Initialize app
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Load movie data
-            const response = await fetch('movies.json');
-            movieData = await response.json();
+        // Event Listeners
+        menuToggle.addEventListener('click', () => sidebar.classList.toggle('collapsed'));
+        searchBar.addEventListener('input', debounce(handleSearch, 300));
+
+        // Initialize
+        fetch('movies.json')
+            .then(response => response.json())
+            .then(data => {
+                allMovies = data.movies;
+                folderStructure = buildFolderStructure(allMovies);
+                renderFolderStructure(folderStructure);
+                renderWatchlist();
+            });
+
+        // Folder structure functions
+        function buildFolderStructure(movies) {
+            const structure = {};
             
-            // Build folder structure
-            buildFolderStructure();
-            renderFolderStructure();
-            renderWatchlist();
-        });
-
-        // Build hierarchical folder structure
-        function buildFolderStructure() {
-            folderStructure = {};
-            movieData.forEach(movie => {
-                const pathSegments = movie.path.split('\\').filter(seg => seg);
-                let currentLevel = folderStructure;
+            movies.forEach(movie => {
+                const pathParts = movie.path.split('\\').filter(p => p);
+                let currentLevel = structure;
                 
-                pathSegments.forEach(segment => {
-                    if (!currentLevel[segment]) {
-                        currentLevel[segment] = { items: [], children: {} };
+                pathParts.forEach((part, index) => {
+                    if (!currentLevel[part]) {
+                        currentLevel[part] = {
+                            name: part,
+                            type: 'folder',
+                            items: {},
+                            movies: []
+                        };
                     }
-                    currentLevel = currentLevel[segment].children;
+                    if (index === pathParts.length - 1) {
+                        currentLevel[part].movies.push(movie);
+                    }
+                    currentLevel = currentLevel[part].items;
                 });
-                
-                currentLevel.items = currentLevel.items || [];
-                currentLevel.items.push(movie);
             });
+            
+            return structure;
         }
 
-        // Render folder structure
-        function renderFolderStructure(node = folderStructure, level = 0) {
-            let html = '<ul class="folder-structure">';
-            
-            Object.entries(node).forEach(([name, data]) => {
-                const hasChildren = Object.keys(data.children).length > 0;
-                
-                html += `
-                    <li class="folder-item">
-                        <div class="folder-header" onclick="toggleFolder(this)">
-                            <span class="folder-icon">${hasChildren ? '📁' : '📂'}</span>
-                            ${name}
-                        </div>
-                        ${hasChildren ? renderFolderStructure(data.children, level + 1) : ''}
-                        ${renderMovies(data.items)}
-                    </li>
+        function renderFolderStructure(structure, parentElement = folderContainer, level = 0) {
+            Object.values(structure).forEach(item => {
+                const folderElement = document.createElement('div');
+                folderElement.className = 'folder';
+                folderElement.innerHTML = `
+                    <div class="folder-header">
+                        <span>📁 ${item.name}</span>
+                    </div>
+                    <div class="folder-contents"></div>
                 `;
+
+                const header = folderElement.querySelector('.folder-header');
+                const contents = folderElement.querySelector('.folder-contents');
+
+                header.addEventListener('click', () => {
+                    contents.classList.toggle('expanded');
+                    if (contents.classList.contains('expanded')) {
+                        renderFolderStructure(item.items, contents, level + 1);
+                        renderMovies(item.movies, contents);
+                    }
+                });
+
+                parentElement.appendChild(folderElement);
             });
-            
-            html += '</ul>';
-            return html;
         }
 
-        // Render movies list
-        function renderMovies(movies) {
-            if (!movies) return '';
-            return `
-                <ul class="movie-list">
-                    ${movies.map(movie => `
-                        <li class="movie-item">
-                            <span>🎬 ${movie.name}</span>
-                            <button class="save-btn" onclick="toggleWatchlist('${movie.name}')">
-                                ${watchlist.some(m => m.name === movie.name) ? 'Remove' : 'Save'}
-                            </button>
-                        </li>
-                    `).join('')}
-                </ul>
-            `;
+        function renderMovies(movies, parentElement) {
+            movies.forEach(movie => {
+                const movieElement = document.createElement('div');
+                movieElement.className = 'movie-item';
+                movieElement.innerHTML = `
+                    <span>🎬 ${movie.name}</span>
+                    <span class="movie-date">${movie.modified_date.split(' ')[0]}</span>
+                    <button class="save-btn">Save</button>
+                `;
+
+                movieElement.querySelector('.save-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleWatchlist(movie);
+                });
+
+                parentElement.appendChild(movieElement);
+            });
         }
 
-        // Toggle folder expansion
-        function toggleFolder(element) {
-            const listItem = element.parentElement;
-            listItem.classList.toggle('collapsed');
-        }
-
-        // Watchlist functionality
-        function toggleWatchlist(movieName) {
-            const movie = movieData.find(m => m.name === movieName);
-            const index = watchlist.findIndex(m => m.name === movieName);
-            
-            if (index > -1) {
-                watchlist.splice(index, 1);
-            } else {
+        // Watchlist functions
+        function toggleWatchlist(movie) {
+            const index = watchlist.findIndex(m => m.path === movie.path && m.name === movie.name);
+            if (index === -1) {
                 watchlist.push(movie);
+            } else {
+                watchlist.splice(index, 1);
             }
-            
             localStorage.setItem('watchlist', JSON.stringify(watchlist));
-            renderFolderStructure();
             renderWatchlist();
         }
 
-        // Render watchlist
         function renderWatchlist() {
-            watchlistContainer.innerHTML = watchlist.map(movie => `
-                <div class="watchlist-item">
-                    <span>🎬 ${movie.name}</span>
-                    <button class="save-btn" onclick="toggleWatchlist('${movie.name}')">
-                        Remove
-                    </button>
-                </div>
-            `).join('');
+            watchlistItems.innerHTML = watchlist
+                .map(movie => `
+                    <div class="watchlist-item">
+                        <span>${movie.name}</span>
+                        <button class="remove-btn">×</button>
+                    </div>
+                `).join('');
+
+            document.querySelectorAll('.remove-btn').forEach((btn, index) => {
+                btn.addEventListener('click', () => {
+                    watchlist.splice(index, 1);
+                    localStorage.setItem('watchlist', JSON.stringify(watchlist));
+                    renderWatchlist();
+                });
+            });
         }
 
         // Search functionality
-        searchInput.addEventListener('input', debounce(() => {
-            const searchTerm = searchInput.value.toLowerCase();
-            const filtered = movieData.filter(movie => 
-                movie.name.toLowerCase().includes(searchTerm)
+        function handleSearch() {
+            const query = searchBar.value.toLowerCase();
+            const filtered = allMovies.filter(movie =>
+                movie.name.toLowerCase().includes(query) ||
+                movie.path.toLowerCase().includes(query) ||
+                movie.modified_date.toLowerCase().includes(query)
             );
             
-            folderStructureContainer.innerHTML = renderMovies(filtered);
-        }, 300));
+            folderContainer.innerHTML = '';
+            renderMovies(filtered, folderContainer);
+        }
 
         // Utility functions
-        function debounce(func, wait) {
-            let timeout;
+        function debounce(func, timeout = 300) {
+            let timer;
             return (...args) => {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(this, args), wait);
+                clearTimeout(timer);
+                timer = setTimeout(() => { func.apply(this, args); }, timeout);
             };
         }
     </script>
 </body>
-    </html>
+</html>
