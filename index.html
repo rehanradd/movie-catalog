@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Library Manager</title>
-    <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
+    <title>Video Library Explorer</title>
     <style>
         :root {
             --primary: #2d3748;
             --secondary: #f7fafc;
-            --accent: #4299e1;
+            --accent: #4a5568;
             --highlight: #c6f6d5;
             --text: #4a5568;
         }
@@ -22,8 +21,8 @@
         }
 
         body {
-            background: var(--secondary);
-            color: var(--text);
+            background: #1a202c;
+            color: #cbd5e0;
             line-height: 1.6;
         }
 
@@ -34,8 +33,7 @@
         }
 
         .header {
-            background: var(--primary);
-            color: white;
+            background: #2d3748;
             padding: 1.5rem;
             margin-bottom: 2rem;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -50,20 +48,22 @@
         #search {
             flex: 1;
             padding: 1rem;
-            border: 2px solid #e2e8f0;
+            background: #2d3748;
+            border: 2px solid #4a5568;
             border-radius: 8px;
+            color: white;
             font-size: 1rem;
             transition: all 0.2s;
         }
 
         #search:focus {
-            border-color: var(--accent);
+            border-color: #4299e1;
             outline: none;
             box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
         }
 
         .view-toggle {
-            background: var(--accent);
+            background: #4299e1;
             color: white;
             border: none;
             padding: 0.8rem 1.5rem;
@@ -73,90 +73,61 @@
             transition: transform 0.1s;
         }
 
-        .view-toggle:hover {
-            transform: translateY(-1px);
-        }
-
-        .file-tree {
-            background: white;
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
         }
 
         .item {
-            padding: 0.75rem 1rem;
+            background: #2d3748;
+            border-radius: 8px;
+            padding: 1rem;
+            transition: transform 0.2s;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            border-radius: 6px;
-            transition: all 0.2s;
+            position: relative;
         }
 
         .item:hover {
-            background: #f8fafc;
+            transform: translateY(-3px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
-        .folder::before {
-            content: '📁';
-            margin-right: 10px;
+        .folder {
+            border-left: 4px solid #4299e1;
+        }
+
+        .file {
+            border-left: 4px solid #48bb78;
+        }
+
+        .item-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .item-icon {
             font-size: 1.2em;
-        }
-
-        .file::before {
-            content: '📄';
-            margin-right: 10px;
-            font-size: 1.2em;
-        }
-
-        .item-info {
-            flex: 1;
-            min-width: 0;
         }
 
         .item-name {
             font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            word-break: break-word;
+        }
+
+        .item-path {
+            color: #a0aec0;
+            font-size: 0.9em;
+            margin-bottom: 0.5rem;
         }
 
         .item-details {
             display: flex;
-            gap: 15px;
-            margin-top: 4px;
-            font-size: 0.9em;
+            gap: 1rem;
+            font-size: 0.85em;
             color: #718096;
-        }
-
-        .item-extension {
-            background: #e2e8f0;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-weight: 500;
-        }
-
-        .item-size {
-            font-feature-settings: "tnum";
-        }
-
-        .item-date {
-            margin-left: auto;
-        }
-
-        .item-count {
-            background: #edf2f7;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.9em;
-            font-weight: 500;
-        }
-
-        .highlight {
-            background: var(--highlight);
-            padding: 0 2px;
-            border-radius: 2px;
         }
 
         .loading {
@@ -166,305 +137,173 @@
             font-size: 1.1em;
         }
 
-        @media (max-width: 768px) {
-            .container {
-                padding: 15px;
-            }
-            
-            .search-container {
-                flex-direction: column;
-            }
-            
-            .item-details {
-                flex-wrap: wrap;
-                gap: 8px;
-            }
-            
-            .item-date {
-                margin-left: 0;
-                width: 100%;
-            }
+        .highlight {
+            background: rgba(198, 246, 213, 0.3);
+            padding: 0 2px;
+            border-radius: 2px;
         }
     </style>
 </head>
 <body>
     <div class="header">
         <div class="container">
-            <h1>🎥 Video Library Manager</h1>
+            <h1>📁 Video Library Explorer</h1>
         </div>
     </div>
 
     <div class="container">
         <div class="search-container">
-            <input type="text" id="search" placeholder="Search movies or folders...">
-            <button class="view-toggle" id="toggleView">Switch to List View</button>
+            <input type="text" id="search" placeholder="Search files and folders...">
+            <button class="view-toggle" id="toggleView">📃 List View</button>
         </div>
-        <div class="file-tree" id="fileTree"></div>
-        <div class="loading" id="loading">Loading video library...</div>
+        <div class="results-grid" id="resultsGrid"></div>
+        <div class="loading" id="loading">Loading library contents...</div>
     </div>
 
 <script>
-let originalData = [];
-let fuse = null;
-let isTreeView = true;
-const pageSize = 50;
-let visibleItems = pageSize;
-let currentStructure = null;
-
-// File size formatting
-const formatSize = bytes => {
-    if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(1)} GB`;
-    if (bytes >= 1e6) return `${(bytes / 1e6).toFixed(1)} MB`;
-    if (bytes >= 1e3) return `${(bytes / 1e3).toFixed(0)} KB`;
-    return `${bytes} B`;
-};
-
-// Path normalization
-const normalizePath = path => path.replace(/\\/g, '/').replace(/\/+/g, '/').replace(/^\/|\/$/g, '');
-
-// Create folder structure
-function createStructure(movies) {
-    const root = { 
-        name: 'Root', 
-        path: '',
-        children: [], 
-        count: 0, 
-        isOpen: true,
-        isFolder: true 
-    };
-
-    movies.forEach(movie => {
-        const pathParts = normalizePath(movie.path).split('/');
-        let current = root;
-
-        pathParts.forEach((part, index) => {
-            if (!part) return;
-            let child = current.children.find(c => c.name === part);
-            if (!child) {
-                child = {
-                    name: part,
-                    path: pathParts.slice(0, index + 1).join('/'),
-                    children: [],
-                    count: 0,
-                    isOpen: false,
-                    isFolder: true
-                };
-                current.children.push(child);
-            }
-            current = child;
-        });
-
-        // Add file with extension
-        const extension = movie.name.split('.').pop().toLowerCase();
-        current.children.push({
-            ...movie,
-            name: movie.name,
-            extension,
-            path: movie.path,
-            isFolder: false
-        });
-    });
-
-    // Calculate counts
-    function countFiles(node) {
-        if (!node.isFolder) return 1;
-        node.count = node.children.reduce((sum, child) => sum + countFiles(child), 0);
-        return node.count;
-    }
-    countFiles(root);
-
-    return root;
-}
-
-// Flatten structure for rendering
-function flattenStructure(node, depth = 0) {
-    if (!node) return [];
-    const items = [];
-
-    if (node.isFolder) {
-        items.push({ ...node, depth });
-        if (node.isOpen) {
-            node.children.forEach(child => {
-                items.push(...flattenStructure(child, depth + 1));
-            });
-        }
-    } else {
-        items.push({ ...node, depth });
+class LibraryExplorer {
+    constructor() {
+        this.originalData = [];
+        this.currentView = 'tree';
+        this.searchTerm = '';
+        this.visibleItems = 50;
+        this.pageSize = 50;
+        this.init();
     }
 
-    return items;
-}
-
-// Render items
-function renderItems() {
-    const container = document.getElementById('fileTree');
-    const items = flattenStructure(currentStructure).slice(0, visibleItems);
-    
-    container.innerHTML = items.length ? items.map(item => `
-        <div class="item ${item.isFolder ? 'folder' : 'file'}" 
-             style="padding-left: ${item.depth * 24}px"
-             data-path="${item.path}">
-            <div class="item-info">
-                <div class="item-name">
-                    ${highlightMatches(item.name)}
-                    ${item.isFolder ? `<span class="item-count">${item.count}</span>` : ''}
-                </div>
-                ${!item.isFolder ? `
-                <div class="item-details">
-                    <span class="item-extension">${item.extension}</span>
-                    <span class="item-size">${formatSize(item.size)}</span>
-                    <span class="item-date">Modified: ${item.modified_date}</span>
-                </div>` : ''}
-            </div>
-        </div>
-    `).join('') : '<div class="item">No items found</div>';
-
-    addEventListeners();
-}
-
-// Highlight matches
-function highlightMatches(text) {
-    const searchTerm = document.getElementById('search').value.trim();
-    if (!searchTerm || typeof text !== 'string') return text;
-
-    try {
-        const escapedTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        const regex = new RegExp(`(${escapedTerm})`, 'gi');
-        return text.replace(regex, '<span class="highlight">$1</span>');
-    } catch(e) {
-        return text;
-    }
-}
-
-// Event listeners
-function addEventListeners() {
-    document.querySelectorAll('.folder').forEach(folder => {
-        folder.addEventListener('click', (e) => {
-            const path = folder.dataset.path;
-            const node = findNode(currentStructure, path);
-            if (node?.isFolder) {
-                node.isOpen = !node.isOpen;
-                renderItems();
-            }
-        });
-    });
-}
-
-// Find node in structure
-function findNode(root, targetPath) {
-    const normalizedTarget = normalizePath(targetPath);
-    function search(node) {
-        if (normalizePath(node.path) === normalizedTarget) return node;
-        if (node.children) {
-            for (const child of node.children) {
-                const found = search(child);
-                if (found) return found;
-            }
-        }
-    }
-    return search(root);
-}
-
-// Search handler
-function handleSearch() {
-    const searchTerm = document.getElementById('search').value.trim();
-    if (!searchTerm) {
-        currentStructure = createStructure(originalData);
-        visibleItems = pageSize;
-        renderItems();
-        return;
-    }
-
-    const results = fuse.search(searchTerm)
-        .sort((a, b) => a.score - b.score)
-        .map(result => result.item);
-
-    currentStructure = {
-        name: 'Search Results',
-        path: '',
-        children: results,
-        isOpen: true,
-        isFolder: true
-    };
-    
-    visibleItems = Math.min(pageSize, results.length);
-    renderItems();
-}
-
-// Toggle view
-function toggleView() {
-    isTreeView = !isTreeView;
-    document.getElementById('toggleView').textContent = 
-        isTreeView ? 'Switch to List View' : 'Switch to Tree View';
-    
-    if (isTreeView) {
-        currentStructure = createStructure(originalData);
-    } else {
-        currentStructure = {
-            name: 'All Files',
-            path: '',
-            children: originalData.map(file => ({
-                ...file,
-                depth: 0,
-                isFolder: false
-            })),
-            isOpen: true,
-            isFolder: true
-        };
-    }
-    
-    fuse = new Fuse(flattenStructure(currentStructure), {
-        keys: ['name', 'path'],
-        threshold: 0.3,
-        minMatchCharLength: 2,
-        ignoreLocation: true
-    });
-    
-    visibleItems = pageSize;
-    renderItems();
-}
-
-// Initialize
-async function loadData() {
-    try {
-        const response = await fetch('movies.json');
-        const data = await response.json();
-        originalData = data.movies;
-        
-        currentStructure = createStructure(originalData);
-        fuse = new Fuse(flattenStructure(currentStructure), {
-            keys: ['name', 'path', 'extension'],
-            threshold: 0.4,
-            includeScore: true,
-            minMatchCharLength: 2,
-            ignoreLocation: true
-        });
-        
+    async init() {
+        await this.loadData();
+        this.setupEventListeners();
+        this.renderResults();
         document.getElementById('loading').remove();
-        renderItems();
-    } catch (error) {
-        console.error('Error:', error);
-        document.getElementById('loading').textContent = 'Failed to load data';
+    }
+
+    async loadData() {
+        try {
+            const response = await fetch('movies.json');
+            const data = await response.json();
+            this.originalData = this.enhanceData(data.movies);
+        } catch (error) {
+            console.error('Error loading data:', error);
+            document.getElementById('loading').textContent = 'Failed to load data';
+        }
+    }
+
+    enhanceData(items) {
+        return items.map(item => ({
+            ...item,
+            isFolder: false,
+            folderPath: this.getFolderPath(item.path),
+            fileName: item.name,
+            extension: item.name.split('.').pop().toLowerCase()
+        }));
+    }
+
+    getFolderPath(fullPath) {
+        return fullPath.split('\\').slice(0, -1).join('\\');
+    }
+
+    customSearch(items, term) {
+        if (!term) return items;
+        const searchWords = term.toLowerCase().split(' ');
+        
+        return items.filter(item => {
+            const searchContent = [
+                item.name?.toLowerCase(),
+                item.path?.toLowerCase(),
+                ...(item.isFolder ? [] : [item.extension])
+            ].join(' ');
+            
+            return searchWords.every(word => 
+                searchContent.includes(word)
+            );
+        });
+    }
+
+    renderResults() {
+        const results = this.customSearch(this.originalData, this.searchTerm);
+        const grid = document.getElementById('resultsGrid');
+        grid.innerHTML = '';
+
+        results.slice(0, this.visibleItems).forEach(item => {
+            const element = this.createItemElement(item);
+            grid.appendChild(element);
+        });
+    }
+
+    createItemElement(item) {
+        const div = document.createElement('div');
+        div.className = `item ${item.isFolder ? 'folder' : 'file'}`;
+        
+        const highlightedName = this.highlightMatches(item.name);
+        const highlightedPath = this.highlightMatches(item.path);
+
+        div.innerHTML = `
+            <div class="item-header">
+                <span class="item-icon">${item.isFolder ? '📁' : '📄'}</span>
+                <div class="item-name">${highlightedName}</div>
+            </div>
+            <div class="item-path">${highlightedPath}</div>
+            ${!item.isFolder ? `
+            <div class="item-details">
+                <span>${this.formatSize(item.size)}</span>
+                <span>${item.extension}</span>
+                <span>${item.modified_date}</span>
+            </div>` : ''}
+        `;
+
+        return div;
+    }
+
+    highlightMatches(text) {
+        if (!this.searchTerm) return text;
+        return text.replace(
+            new RegExp(`(${this.searchTerm.split(' ').join('|')})`, 'gi'),
+            '<span class="highlight">$1</span>'
+        );
+    }
+
+    formatSize(bytes) {
+        if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(1)} GB`;
+        if (bytes >= 1e6) return `${(bytes / 1e6).toFixed(1)} MB`;
+        if (bytes >= 1e3) return `${(bytes / 1e3).toFixed(0)} KB`;
+        return `${bytes} B`;
+    }
+
+    setupEventListeners() {
+        let searchTimeout;
+        document.getElementById('search').addEventListener('input', (e) => {
+            this.searchTerm = e.target.value;
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                this.visibleItems = this.pageSize;
+                this.renderResults();
+            }, 300);
+        });
+
+        document.getElementById('toggleView').addEventListener('click', () => {
+            this.currentView = this.currentView === 'tree' ? 'list' : 'tree';
+            document.getElementById('toggleView').textContent = 
+                `${this.currentView === 'tree' ? '📃 List' : '📁 Tree'} View`;
+            this.renderResults();
+        });
+
+        window.addEventListener('scroll', () => {
+            if (this.shouldLoadMore()) {
+                this.visibleItems += this.pageSize;
+                this.renderResults();
+            }
+        });
+    }
+
+    shouldLoadMore() {
+        const { scrollTop, clientHeight, scrollHeight } = document.documentElement;
+        return scrollTop + clientHeight >= scrollHeight - 100;
     }
 }
 
-// Event listeners
-document.getElementById('search').addEventListener('input', () => {
-    clearTimeout(this.searchTimeout);
-    this.searchTimeout = setTimeout(handleSearch, 300);
-});
-
-document.getElementById('toggleView').addEventListener('click', toggleView);
-
-window.addEventListener('scroll', () => {
-    if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100) {
-        visibleItems = Math.min(visibleItems + pageSize, flattenStructure(currentStructure).length);
-        renderItems();
-    }
-});
-
-// Start
-loadData();
+// Initialize the explorer
+new LibraryExplorer();
 </script>
 </body>
 </html>
