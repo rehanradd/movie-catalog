@@ -3,141 +3,259 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Movie Explorer</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Movie Browser</title>
     <style>
-        body { background-color: #1a1a1a; color: white; }
-        .folder > div { cursor: pointer; padding: 5px; }
-        .folder-content { display: none; padding-left: 15px; }
-        .active { display: block !important; }
-        .watchlist-item { display: flex; justify-content: space-between; padding: 5px 10px; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: #f0f2f5;
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            min-height: 100vh;
+        }
+
+        /* Header Styles */
+        .header {
+            grid-column: 1 / -1;
+            background: #fff;
+            padding: 1rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .search-bar {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-width: 300px;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #f0f2f5;
+        }
+
+        .btn.active {
+            background: #007bff;
+            color: white;
+        }
+
+        /* Main Content Styles */
+        .main-content {
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .folder-section {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .movie-item, .folder-item {
+            padding: 1rem;
+            background: white;
+            margin: 0.5rem 0;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            background: #fff;
+            padding: 2rem;
+            border-left: 1px solid #ddd;
+            height: 100vh;
+            position: sticky;
+            top: 0;
+        }
+
+        .watchlist-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .file-size {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .date {
+            color: #666;
+            font-size: 0.9em;
+        }
     </style>
 </head>
-<body class="flex h-screen">
-    
-    <!-- Sidebar -->
-    <div id="sidebar" class="w-64 bg-gray-900 text-white p-3 space-y-4">
-        <h2 class="text-lg font-bold">🎬 Movie Explorer</h2>
-        <input id="search" type="text" placeholder="Search movies..." class="w-full p-2 rounded bg-gray-800 border-none text-white">
-        
-        <!-- Movie Folder List -->
-        <div id="folder-list" class="mt-2"></div>
+<body>
+    <header class="header">
+        <input type="text" class="search-bar" placeholder="Search movies or folders...">
+        <div class="filter-group">
+            <button class="btn active" data-filter="all">All</button>
+            <button class="btn" data-filter="folders">Folders</button>
+            <button class="btn" data-filter="movies">Movies</button>
+        </div>
+        <div class="filter-group">
+            <select class="btn" id="sort">
+                <option value="az">A → Z</option>
+                <option value="za">Z → A</option>
+                <option value="modified">Last Modified</option>
+                <option value="size">File Size</option>
+            </select>
+        </div>
+    </header>
 
-        <!-- Watchlist -->
-        <h2 class="text-lg font-bold mt-4">⭐ Watchlist</h2>
-        <div id="watchlist" class="space-y-2"></div>
-    </div>
+    <main class="main-content">
+        <!-- Content will be populated by JavaScript -->
+    </main>
 
-    <!-- Main Content -->
-    <div class="flex-1 p-5 overflow-auto">
-        <h1 class="text-2xl font-bold">Movies</h1>
-        <div id="movies-container" class="mt-4"></div>
-    </div>
+    <aside class="sidebar">
+        <h3>Watchlist</h3>
+        <div id="watchlist">
+            <!-- Watchlist items will be added here -->
+        </div>
+    </aside>
 
     <script>
-        const moviesJsonPath = "movies.json"; // Change this path if needed
+        // Load movie data
+        let movies = [];
+        let watchlist = JSON.parse(localStorage.getItem('watchlist')) || [];
 
-        // Fetch movie data
-        async function loadMovies() {
-            const response = await fetch(moviesJsonPath);
-            const data = await response.json();
-            return data.movies;
+        fetch('movies.json')
+            .then(response => response.json())
+            .then(data => {
+                movies = data.movies;
+                renderContent();
+                setupEventListeners();
+            });
+
+        function renderContent() {
+            const mainContent = document.querySelector('.main-content');
+            mainContent.innerHTML = '';
+
+            // Group movies by folder
+            const folders = {};
+            movies.forEach(movie => {
+                const folderPath = movie.path.split('\\').slice(-1)[0];
+                if (!folders[folderPath]) {
+                    folders[folderPath] = [];
+                }
+                folders[folderPath].push(movie);
+            });
+
+            // Render folders and movies
+            for (const [folderName, folderMovies] of Object.entries(folders)) {
+                const folderSection = document.createElement('div');
+                folderSection.className = 'folder-section';
+                folderSection.innerHTML = `
+                    <h3>📁 ${folderName} (${folderMovies.length})</h3>
+                    <div class="folder-movies"></div>
+                `;
+
+                const moviesContainer = folderSection.querySelector('.folder-movies');
+                folderMovies.forEach(movie => {
+                    const movieElement = createMovieElement(movie);
+                    moviesContainer.appendChild(movieElement);
+                });
+
+                mainContent.appendChild(folderSection);
+            }
         }
 
-        // Convert movie list into a folder structure
-        function buildMovieTree(movies) {
-            const tree = {};
-            movies.forEach(movie => {
-                const pathParts = movie.path.split("\\");
-                let current = tree;
-                pathParts.forEach((part, index) => {
-                    if (!current[part]) current[part] = index === pathParts.length - 1 ? [] : {};
-                    if (index === pathParts.length - 1) current[part].push(movie);
-                    current = current[part];
+        function createMovieElement(movie) {
+            const element = document.createElement('div');
+            element.className = movie.extension ? 'movie-item' : 'folder-item';
+            element.innerHTML = `
+                <div>
+                    ${movie.extension ? '🎬' : '📁'} ${movie.name}
+                    ${movie.size ? `<span class="file-size">(${(movie.size/1024/1024).toFixed(1)} MB)</span>` : ''}
+                </div>
+                <div>
+                    ${movie.modified_date ? `<span class="date">📅 ${movie.modified_date.split(' ')[0]}</span>` : ''}
+                    <button class="btn add-watchlist">➕ Add to Watchlist</button>
+                </div>
+            `;
+            return element;
+        }
+
+        function setupEventListeners() {
+            // Add to watchlist
+            document.addEventListener('click', (e) => {
+                if (e.target.classList.contains('add-watchlist')) {
+                    const movieName = e.target.closest('.movie-item').querySelector('div').innerText;
+                    if (!watchlist.includes(movieName)) {
+                        watchlist.push(movieName);
+                        localStorage.setItem('watchlist', JSON.stringify(watchlist));
+                        updateWatchlist();
+                    }
+                }
+            });
+
+            // Search functionality
+            document.querySelector('.search-bar').addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                filterContent(searchTerm);
+            });
+
+            // Filter buttons
+            document.querySelectorAll('[data-filter]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    filterContent();
                 });
             });
-            return tree;
+
+            // Sort functionality
+            document.querySelector('#sort').addEventListener('change', filterContent);
         }
 
-        // Render folder structure
-        function renderFolderTree(folder, parentElement) {
-            Object.keys(folder).forEach(folderName => {
-                const folderDiv = document.createElement("div");
-                folderDiv.className = "folder";
-
-                const titleDiv = document.createElement("div");
-                titleDiv.innerHTML = "📂 " + folderName;
-                titleDiv.onclick = () => contentDiv.classList.toggle("active");
-
-                const contentDiv = document.createElement("div");
-                contentDiv.className = "folder-content";
-
-                if (Array.isArray(folder[folderName])) {
-                    folder[folderName].forEach(movie => {
-                        const movieDiv = document.createElement("div");
-                        movieDiv.className = "p-2 hover:bg-gray-700 rounded";
-                        movieDiv.innerHTML = `🎥 ${movie.name} <button class="ml-2 text-yellow-400" onclick="addToWatchlist('${movie.name}')">⭐</button>`;
-                        contentDiv.appendChild(movieDiv);
-                    });
-                } else {
-                    renderFolderTree(folder[folderName], contentDiv);
-                }
-
-                folderDiv.appendChild(titleDiv);
-                folderDiv.appendChild(contentDiv);
-                parentElement.appendChild(folderDiv);
-            });
+        function filterContent(searchTerm = '') {
+            // Implement filtering and sorting logic here
         }
 
-        // Add movie to watchlist (localStorage)
-        function addToWatchlist(movieName) {
-            let watchlist = JSON.parse(localStorage.getItem("watchlist")) || [];
-            if (!watchlist.includes(movieName)) watchlist.push(movieName);
-            localStorage.setItem("watchlist", JSON.stringify(watchlist));
-            renderWatchlist();
+        function updateWatchlist() {
+            const watchlistDiv = document.getElementById('watchlist');
+            watchlistDiv.innerHTML = watchlist.map(item => `
+                <div class="watchlist-item">
+                    <span>${item}</span>
+                    <button class="btn" onclick="removeFromWatchlist('${item}')">🗑️ Remove</button>
+                </div>
+            `).join('');
         }
 
-        // Remove movie from watchlist
-        function removeFromWatchlist(movieName) {
-            let watchlist = JSON.parse(localStorage.getItem("watchlist")) || [];
-            watchlist = watchlist.filter(m => m !== movieName);
-            localStorage.setItem("watchlist", JSON.stringify(watchlist));
-            renderWatchlist();
+        window.removeFromWatchlist = function(item) {
+            watchlist = watchlist.filter(i => i !== item);
+            localStorage.setItem('watchlist', JSON.stringify(watchlist));
+            updateWatchlist();
         }
 
-        // Display watchlist
-        function renderWatchlist() {
-            const watchlistContainer = document.getElementById("watchlist");
-            watchlistContainer.innerHTML = "";
-            let watchlist = JSON.parse(localStorage.getItem("watchlist")) || [];
-
-            watchlist.forEach(movie => {
-                const movieItem = document.createElement("div");
-                movieItem.className = "watchlist-item bg-gray-800 rounded p-2";
-                movieItem.innerHTML = `
-                    ${movie}
-                    <button class="text-red-400" onclick="removeFromWatchlist('${movie}')">❌</button>
-                `;
-                watchlistContainer.appendChild(movieItem);
-            });
-        }
-
-        // Search functionality
-        document.getElementById("search").addEventListener("input", function() {
-            const query = this.value.toLowerCase();
-            const allMovies = document.querySelectorAll(".folder-content div");
-            allMovies.forEach(movie => {
-                movie.style.display = movie.innerText.toLowerCase().includes(query) ? "block" : "none";
-            });
-        });
-
-        // Load and render movies
-        (async function init() {
-            const movies = await loadMovies();
-            const movieTree = buildMovieTree(movies);
-            renderFolderTree(movieTree, document.getElementById("folder-list"));
-            renderWatchlist();
-        })();
+        // Initial watchlist render
+        updateWatchlist();
     </script>
 </body>
 </html>
