@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Media Browser</title>
+    <title>Media Explorer</title>
     <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
     <style>
         :root {
@@ -51,30 +51,74 @@
             transition: all 0.3s ease;
         }
 
-        .folder-group {
+        .drive-list {
+            display: grid;
+            gap: 10px;
+        }
+
+        .drive-item, .folder-item {
             background: white;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 15px;
-        }
-
-        .file-list {
-            padding-top: 10px;
-        }
-
-        .media-item {
-            padding: 15px;
             border-radius: 8px;
-            background: #f8f9fa;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
             transition: transform 0.2s ease;
         }
 
-        .media-item:hover {
+        .drive-item:hover, .folder-item:hover {
             transform: translateX(5px);
+        }
+
+        .drive-header, .folder-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .drive-name, .folder-name {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .file-list {
+            padding-left: 20px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .file-item {
+            padding: 10px;
+            border-radius: 6px;
+            background: #f8f9fa;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .file-name {
+            flex: 1;
+            margin-right: 15px;
+        }
+
+        .file-info {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .file-size {
+            min-width: 80px;
+            text-align: right;
+        }
+
+        .new-indicator {
+            background: #27ae60;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 10px;
         }
 
         .loading {
@@ -89,7 +133,7 @@
         <div class="search-box">
             <input type="text" id="searchInput" placeholder="Search files or folders...">
         </div>
-        <div id="resultsContainer"></div>
+        <div id="resultsContainer" class="drive-list"></div>
         <div id="loading" class="loading">Loading...</div>
     </div>
 
@@ -101,53 +145,126 @@
         let isLoading = false;
         let currentResults = [];
 
-        async function loadMovies() {
+        function formatSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function isNewFile(date) {
+            const fileDate = new Date(date);
+            const today = new Date();
+            return fileDate.toDateString() === today.toDateString();
+        }
+
+        function sortFiles(files) {
+            return files.sort((a, b) => {
+                const aNum = parseInt(a.name.match(/\d+/)?.[0] || NaN;
+                const bNum = parseInt(b.name.match(/\d+/)?.[0] || NaN;
+
+                if (!isNaN(aNum) && !isNaN(bNum)) {
+                    return aNum - bNum;
+                }
+                return new Date(b.modified_date) - new Date(a.modified_date);
+            });
+        }
+
+        function renderDrive(drive) {
+            const container = document.getElementById('resultsContainer');
+            const driveItem = document.createElement('div');
+            driveItem.className = 'drive-item';
+            driveItem.innerHTML = `
+                <div class="drive-header">
+                    <div class="drive-name">${drive}</div>
+                </div>
+                <div class="file-list"></div>
+            `;
+            container.appendChild(driveItem);
+
+            driveItem.addEventListener('click', () => {
+                const fileList = driveItem.querySelector('.file-list');
+                fileList.style.display = fileList.style.display === 'none' ? 'block' : 'none';
+
+                if (fileList.children.length === 0) {
+                    const folders = groupFilesByFolder(allFiles.filter(file => file.path.startsWith(drive)));
+                    folders.forEach(folder => renderFolder(folder, fileList));
+                }
+            });
+        }
+
+        function renderFolder(folder, parent) {
+            const folderItem = document.createElement('div');
+            folderItem.className = 'folder-item';
+            folderItem.innerHTML = `
+                <div class="folder-header">
+                    <div class="folder-name">${folder.path}</div>
+                </div>
+                <div class="file-list"></div>
+            `;
+            parent.appendChild(folderItem);
+
+            folderItem.addEventListener('click', () => {
+                const fileList = folderItem.querySelector('.file-list');
+                fileList.style.display = fileList.style.display === 'none' ? 'block' : 'none';
+
+                if (fileList.children.length === 0) {
+                    const sortedFiles = sortFiles(folder.files);
+                    sortedFiles.forEach(file => renderFile(file, fileList));
+                }
+            });
+        }
+
+        function renderFile(file, parent) {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            fileItem.innerHTML = `
+                <div class="file-name">${file.name}${file.extension}</div>
+                <div class="file-info">
+                    <div class="file-date">${file.modified_date.split(' ')[0]}</div>
+                    <div class="file-size">${formatSize(file.size)}</div>
+                    ${isNewFile(file.modified_date) ? '<div class="new-indicator">NEW</div>' : ''}
+                </div>
+            `;
+            parent.appendChild(fileItem);
+        }
+
+        async function initSearch() {
             try {
                 const response = await fetch('movies.json');
                 const data = await response.json();
                 allFiles = data.movies;
-                
-                fuse = new Fuse(allFiles, { keys: ['name', 'path'], threshold: 0.3 });
-                currentResults = allFiles;
-                renderResults();
+
+                const drives = [...new Set(allFiles.map(file => file.path.split('\\')[0]))];
+                drives.forEach(drive => renderDrive(drive));
+
+                fuse = new Fuse(allFiles, {
+                    keys: ['name', 'path'],
+                    threshold: 0.3,
+                    minMatchCharLength: 2
+                });
+
                 setupSearch();
-                setupInfiniteScroll();
             } catch (error) {
                 console.error('Error loading data:', error);
             }
         }
 
-        function renderResults() {
-            const container = document.getElementById('resultsContainer');
-            container.innerHTML = currentResults.slice(0, currentPage * itemsPerPage).map(file => `
-                <div class="media-item">
-                    <div class="file-name">${file.name}${file.extension}</div>
-                    <div class="file-info">${file.size} MB</div>
-                </div>
-            `).join('');
-        }
-
         function setupSearch() {
-            document.getElementById('searchInput').addEventListener('input', (e) => {
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', (e) => {
                 const query = e.target.value.trim();
-                currentPage = 1;
-                currentResults = query ? fuse.search(query).map(result => result.item) : allFiles;
+                if (query === '') {
+                    currentResults = allFiles;
+                } else {
+                    currentResults = fuse.search(query).map(result => result.item);
+                }
                 renderResults();
             });
         }
 
-        function setupInfiniteScroll() {
-            window.addEventListener('scroll', () => {
-                if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100 && !isLoading) {
-                    isLoading = true;
-                    currentPage++;
-                    renderResults();
-                    isLoading = false;
-                }
-            });
-        }
-
-        loadMovies();
+        initSearch();
     </script>
 </body>
 </html>
