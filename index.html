@@ -3,14 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Media Browser</title>
-    <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
+    <title>Movie Catalog Pro</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        /* Modern App Design System */
         :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --background: #f5f6fa;
-            --text-color: #2c3e50;
+            --primary: #6d28d9; /* Purple */
+            --secondary: #8b5cf6; /* Light Purple */
+            --background: #f9fafb; /* Light Gray */
+            --surface: #ffffff; /* White */
+            --text: #1f2937; /* Dark Gray */
+            --border: #e5e7eb; /* Light Gray */
+            --success: #10b981; /* Green */
+            --error: #ef4444; /* Red */
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [data-theme="dark"] {
+            --primary: #7c3aed; /* Light Purple */
+            --secondary: #a78bfa; /* Lighter Purple */
+            --background: #111827; /* Dark Gray */
+            --surface: #1f2937; /* Darker Gray */
+            --text: #f9fafb; /* Light Gray */
+            --border: #374151; /* Dark Border */
+            --success: #34d399; /* Light Green */
+            --error: #f87171; /* Light Red */
         }
 
         * {
@@ -20,247 +37,435 @@
         }
 
         body {
-            font-family: 'Segoe UI', sans-serif;
-            background-color: var(--background);
-            color: var(--text-color);
+            font-family: 'Segoe UI', system-ui;
+            background: var(--background);
+            color: var(--text);
             line-height: 1.6;
-            padding: 20px;
+            transition: var(--transition);
         }
 
-        .container {
+        /* App Layout */
+        .app-container {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: var(--surface);
+            padding: 1.5rem;
+            border-right: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 2rem;
+            padding: 0.5rem;
+        }
+
+        .brand-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            border-radius: 8px;
+            display: grid;
+            place-items: center;
+            color: white;
+        }
+
+        /* Watchlist Section */
+        .watchlist-section {
+            margin-top: 2rem;
+        }
+
+        .watchlist-section h3 {
+            margin-bottom: 1rem;
+            color: var(--text);
+        }
+
+        .watchlist-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px;
+            border-radius: 8px;
+            background: var(--background);
+            margin-bottom: 8px;
+            transition: var(--transition);
+        }
+
+        .watchlist-item:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 2rem;
             max-width: 1200px;
             margin: 0 auto;
+            width: 100%;
         }
 
-        .search-box {
-            margin-bottom: 30px;
+        /* Search Bar */
+        .search-container {
             position: sticky;
             top: 0;
             background: var(--background);
-            z-index: 100;
-            padding: 10px 0;
+            padding: 1rem 0;
+            z-index: 10;
         }
 
-        #searchInput {
-            width: 100%;
-            padding: 15px 20px;
-            font-size: 18px;
-            border: 2px solid #ddd;
-            border-radius: 30px;
-            outline: none;
-            transition: all 0.3s ease;
-        }
-
-        .folder-group {
-            background: white;
+        .search-box {
+            display: flex;
+            gap: 1rem;
+            background: var(--surface);
+            padding: 0.75rem 1.5rem;
             border-radius: 12px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border);
         }
 
-        .folder-header {
-            padding: 15px;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .folder-name {
-            font-weight: 600;
-            color: var(--primary-color);
-        }
-
-        .folder-info {
-            color: #7f8c8d;
-            font-size: 14px;
-        }
-
-        .file-list {
-            padding: 15px;
-            display: grid;
-            gap: 15px;
-        }
-
-        .media-item {
-            padding: 15px;
-            border-radius: 8px;
-            background: #f8f9fa;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: transform 0.2s ease;
-        }
-
-        .media-item:hover {
-            transform: translateX(5px);
-        }
-
-        .file-name {
+        #search {
             flex: 1;
-            margin-right: 15px;
+            border: none;
+            background: transparent;
+            color: var(--text);
+            font-size: 1rem;
         }
 
-        .file-info {
-            display: flex;
-            gap: 15px;
-            align-items: center;
+        /* Grid Layout */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
         }
 
-        .file-size {
-            min-width: 80px;
-            text-align: right;
+        /* Cards */
+        .card {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            transition: var(--transition);
+            cursor: pointer;
+            position: relative;
         }
 
-        .new-indicator {
-            background: #27ae60;
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .card.folder {
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
             color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            margin-left: 10px;
         }
 
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: #95a5a6;
+        .badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: var(--success);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Watchlist Button */
+        .watchlist-btn {
+            position: absolute;
+            bottom: 1rem;
+            right: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            color: inherit;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .watchlist-btn.saved {
+            background: var(--success);
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: fixed;
+                width: 280px;
+                height: 100vh;
+                transform: translateX(-100%);
+                z-index: 100;
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .brand {
+                display: none;
+            }
+
+            .main-content {
+                padding: 1rem;
+                margin-bottom: 80px;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Dark Mode Toggle */
+        .theme-toggle {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 1rem;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Menu Toggle Button */
+        .menu-toggle {
+            position: fixed;
+            bottom: 6rem;
+            right: 2rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 1rem;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 101;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="search-box">
-            <input type="text" id="searchInput" placeholder="Search files or folders...">
-        </div>
-        <div id="resultsContainer"></div>
-        <div id="loading" class="loading">Loading...</div>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-icon">🎬</div>
+                <h1>Movie Pro</h1>
+            </div>
+            <div class="watchlist-section">
+                <h3>Your Watchlist</h3>
+                <div id="watchlistItems"></div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="search-container">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="search" placeholder="Search 10,000+ movies...">
+                </div>
+                <button class="back-btn" id="backBtn" style="display: none;">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+            </div>
+
+            <div class="grid" id="results"></div>
+        </main>
+
+        <!-- Theme Toggle -->
+        <button class="theme-toggle" id="darkModeToggle">
+            <i class="fas fa-moon"></i>
+        </button>
+
+        <!-- Menu Toggle -->
+        <button class="menu-toggle" id="menuToggle">
+            <i class="fas fa-bars"></i>
+        </button>
     </div>
 
     <script>
-        let allFiles = [];
-        let fuse = null;
-        let currentPage = 1;
-        const itemsPerPage = 40;
-        let isLoading = false;
-        let currentResults = [];
+        let allItems = [];
+        let watchlist = JSON.parse(localStorage.getItem('watchlist')) || [];
+        let currentFolder = null;
 
-        function formatSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        // Load movie data
+        async function loadData() {
+            try {
+                const response = await fetch('movies.json');
+                if (!response.ok) throw new Error('Failed to load data');
+                
+                const data = await response.json();
+                allItems = flattenData(data.root);
+                displayResults(allItems.slice(0, 50)); // Lazy load first 50 items
+                updateWatchlist();
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('results').innerHTML = `
+                    <div class="error-message">Failed to load movie data. Please try again later.</div>
+                `;
+            }
         }
 
-        function groupFilesByFolder(files) {
-            const folders = new Map();
+        // Flatten nested structure
+        function flattenData(folder) {
+            let items = [];
             
-            files.forEach(file => {
-                const folderPath = file.path;
-                if (!folders.has(folderPath)) {
-                    folders.set(folderPath, {
-                        path: folderPath,
-                        files: [],
-                        latestDate: new Date(file.modified_date),
-                        hasNew: file.is_new
-                    });
-                }
-                
-                const folder = folders.get(folderPath);
-                folder.files.push(file);
-                folder.latestDate = Math.max(folder.latestDate, new Date(file.modified_date));
-                folder.hasNew = folder.hasNew || file.is_new;
+            // Add folder info
+            items.push({
+                type: 'folder',
+                name: folder.name,
+                path: folder.path,
+                file_count: folder.file_count,
+                is_updated: folder.files.some(file => file.is_new),
+                files: folder.files,
+                subfolders: folder.subfolders
             });
 
-            return Array.from(folders.values()).sort((a, b) => b.latestDate - a.latestDate);
+            // Add files
+            if (folder.files && folder.files.length > 0) {
+                items.push(...folder.files.map(file => ({
+                    type: 'file',
+                    name: `${file.name}${file.extension}`,
+                    path: folder.path,
+                    is_new: file.is_new
+                })));
+            }
+
+            // Process subfolders
+            if (folder.subfolders) {
+                Object.values(folder.subfolders).forEach(subfolder => {
+                    items.push(...flattenData(subfolder));
+                });
+            }
+
+            return items;
         }
 
-        function renderResults() {
-            const container = document.getElementById('resultsContainer');
-            const groups = groupFilesByFolder(currentResults.slice(0, currentPage * itemsPerPage));
-            
-            container.innerHTML = groups.map(folder => `
-                <div class="folder-group">
-                    <div class="folder-header">
-                        <div>
-                            <span class="folder-name">${folder.path}</span>
-                            ${folder.hasNew ? '<span class="new-indicator">New</span>' : ''}
-                        </div>
-                        <div class="folder-info">
-                            ${folder.files.length} items • Last modified: ${new Date(folder.latestDate).toLocaleDateString()}
-                        </div>
-                    </div>
-                    <div class="file-list">
-                        ${folder.files.sort((a, b) => a.name.localeCompare(b.name)).map(file => `
-                            <div class="media-item ${file.is_new ? 'new-item' : ''}">
-                                <div class="file-name">${file.name}${file.extension}</div>
-                                <div class="file-info">
-                                    <div class="file-date">${file.modified_date.split(' ')[0]}</div>
-                                    <div class="file-size">${formatSize(file.size)}</div>
+        // Display results
+        function displayResults(items) {
+            const container = document.getElementById('results');
+            let html = '';
+
+            items.forEach(item => {
+                if (item.type === 'folder') {
+                    html += `
+                        <div class="card folder ${item.is_updated ? 'updated-folder' : ''}" onclick="openFolder('${item.name}')">
+                            <div class="folder-header">
+                                <i class="fas fa-folder"></i>
+                                <div>
+                                    <strong>${item.name}</strong>
+                                    <span style="color:#666; font-size:0.9em">
+                                        (${item.file_count} files)
+                                    </span>
                                 </div>
                             </div>
-                        `).join('')}
-                    </div>
+                        </div>
+                    `;
+                } else {
+                    const isInWatchlist = watchlist.some(movie => movie.name === item.name);
+                    html += `
+                        <div class="card file-item">
+                            <i class="fas fa-file-video" style="color:#4a90e2"></i>
+                            <div>
+                                ${item.name}
+                                ${item.is_new ? '<span class="badge">NEW</span>' : ''}
+                            </div>
+                            <button class="watchlist-btn ${isInWatchlist ? 'saved' : ''}" 
+                                    data-movie="${item.name}" 
+                                    onclick="toggleWatchlist('${item.name}')">
+                                ${isInWatchlist ? 'Saved' : 'Save'}
+                            </button>
+                        </div>
+                    `;
+                }
+            });
+
+            container.innerHTML = html || `<div class="help-text">No results found</div>`;
+        }
+
+        // Open folder
+        function openFolder(folderName) {
+            const folder = allItems.find(item => item.name === folderName && item.type === 'folder');
+            if (!folder) return;
+
+            currentFolder = folder;
+            document.getElementById('backBtn').style.display = 'block';
+            displayResults([...folder.files, ...Object.values(folder.subfolders)]);
+        }
+
+        // Back button
+        document.getElementById('backBtn').addEventListener('click', () => {
+            currentFolder = null;
+            document.getElementById('backBtn').style.display = 'none';
+            displayResults(allItems.slice(0, 50));
+        });
+
+        // Toggle watchlist
+        function toggleWatchlist(movieName) {
+            const index = watchlist.findIndex(item => item.name === movieName);
+            if (index === -1) {
+                watchlist.push({ name: movieName });
+            } else {
+                watchlist.splice(index, 1);
+            }
+            localStorage.setItem('watchlist', JSON.stringify(watchlist));
+            updateWatchlist();
+            document.querySelector(`button[data-movie="${movieName}"]`).classList.toggle('saved');
+        }
+
+        // Update watchlist
+        function updateWatchlist() {
+            const watchlistItems = document.getElementById('watchlistItems');
+            watchlistItems.innerHTML = watchlist.map(movie => `
+                <div class="watchlist-item">
+                    <i class="fas fa-file-video"></i>
+                    <span>${movie.name}</span>
                 </div>
             `).join('');
         }
 
-        async function initSearch() {
-            try {
-                const response = await fetch('movies.json');
-                const data = await response.json();
-                allFiles = data.movies;
-                
-                fuse = new Fuse(allFiles, {
-                    keys: ['name', 'path'],
-                    threshold: 0.3,
-                    minMatchCharLength: 2
-                });
+        // Search functionality
+        document.getElementById('search').addEventListener('input', function () {
+            const query = this.value.toLowerCase();
+            const filtered = allItems.filter(item => item.name.toLowerCase().includes(query));
+            displayResults(filtered.slice(0, 50));
+        });
 
-                currentResults = allFiles;
-                renderResults();
-                setupSearch();
-                setupInfiniteScroll();
-            } catch (error) {
-                console.error('Error loading data:', error);
-            }
-        }
+        // Dark mode toggle
+        document.getElementById('darkModeToggle').addEventListener('click', () => {
+            document.body.dataset.theme = document.body.dataset.theme === 'dark' ? 'light' : 'dark';
+        });
 
-        function setupSearch() {
-            const searchInput = document.getElementById('searchInput');
-            searchInput.addEventListener('input', (e) => {
-                const query = e.target.value.trim();
-                currentPage = 1;
-                
-                if (query === '') {
-                    currentResults = allFiles;
-                } else {
-                    currentResults = fuse.search(query).map(result => result.item);
-                }
+        // Menu toggle
+        document.getElementById('menuToggle').addEventListener('click', () => {
+            document.querySelector('.sidebar').classList.toggle('active');
+        });
 
-                renderResults();
-            });
-        }
-
-        function setupInfiniteScroll() {
-            window.addEventListener('scroll', () => {
-                const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
-                if (scrollTop + clientHeight >= scrollHeight - 100 && !isLoading) {
-                    isLoading = true;
-                    document.getElementById('loading').style.display = 'block';
-                    
-                    setTimeout(() => {
-                        currentPage++;
-                        renderResults();
-                        isLoading = false;
-                        document.getElementById('loading').style.display = 'none';
-                    }, 500);
-                }
-            });
-        }
-
-        initSearch();
+        // Initial load
+        loadData();
     </script>
 </body>
 </html>
