@@ -161,8 +161,8 @@
 
         function sortFiles(files) {
             return files.sort((a, b) => {
-                const aNum = parseInt(a.name.match(/\d+/)?.[0] || NaN;
-                const bNum = parseInt(b.name.match(/\d+/)?.[0] || NaN;
+const aNum = parseInt(a.name.match(/\d+/)?.[0] || NaN);
+const bNum = parseInt(b.name.match(/\d+/)?.[0] || NaN);
 
                 if (!isNaN(aNum) && !isNaN(bNum)) {
                     return aNum - bNum;
