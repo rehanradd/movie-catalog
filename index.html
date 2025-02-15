@@ -13,10 +13,17 @@
             --text-color: #2c3e50;
         }
 
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
             font-family: 'Segoe UI', sans-serif;
             background-color: var(--background);
             color: var(--text-color);
+            line-height: 1.6;
             padding: 20px;
         }
 
@@ -25,35 +32,99 @@
             margin: 0 auto;
         }
 
-        .search-box input {
+        .search-box {
+            margin-bottom: 30px;
+            position: sticky;
+            top: 0;
+            background: var(--background);
+            z-index: 100;
+            padding: 10px 0;
+        }
+
+        #searchInput {
             width: 100%;
-            padding: 12px;
+            padding: 15px 20px;
+            font-size: 18px;
             border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 16px;
+            border-radius: 30px;
             outline: none;
+            transition: all 0.3s ease;
         }
 
-        .folder {
-            background: #ecf0f1;
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .folder .file {
-            margin-left: 20px;
+        .folder-group {
             background: white;
-            padding: 8px;
-            border-radius: 6px;
-            margin-top: 5px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
-        .hidden {
-            display: none;
+        .folder-header {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .folder-name {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .folder-info {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .file-list {
+            padding: 15px;
+            display: grid;
+            gap: 15px;
+        }
+
+        .media-item {
+            padding: 15px;
+            border-radius: 8px;
+            background: #f8f9fa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s ease;
+        }
+
+        .media-item:hover {
+            transform: translateX(5px);
+        }
+
+        .file-name {
+            flex: 1;
+            margin-right: 15px;
+        }
+
+        .file-info {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .file-size {
+            min-width: 80px;
+            text-align: right;
+        }
+
+        .new-indicator {
+            background: #27ae60;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #95a5a6;
         }
     </style>
 </head>
@@ -62,71 +133,134 @@
         <div class="search-box">
             <input type="text" id="searchInput" placeholder="Search files or folders...">
         </div>
-        <div id="mediaContainer"></div>
+        <div id="resultsContainer"></div>
+        <div id="loading" class="loading">Loading...</div>
     </div>
 
     <script>
-        let mediaData = [];
-        let fuse;
-        let displayedItems = 40;
+        let allFiles = [];
+        let fuse = null;
+        let currentPage = 1;
+        const itemsPerPage = 40;
+        let isLoading = false;
+        let currentResults = [];
 
-        async function fetchMedia() {
-            const response = await fetch('movies.json');
-            const data = await response.json();
-            mediaData = data.movies;
-            renderFolders();
-            setupSearch();
+        function formatSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        function renderFolders() {
-            const container = document.getElementById('mediaContainer');
-            container.innerHTML = '';
-
-            const folders = {};
-            mediaData.forEach(item => {
-                if (!folders[item.folder]) folders[item.folder] = [];
-                folders[item.folder].push(item);
+        function groupFilesByFolder(files) {
+            const folders = new Map();
+            
+            files.forEach(file => {
+                const folderPath = file.path;
+                if (!folders.has(folderPath)) {
+                    folders.set(folderPath, {
+                        path: folderPath,
+                        files: [],
+                        latestDate: new Date(file.modified_date),
+                        hasNew: file.is_new
+                    });
+                }
+                
+                const folder = folders.get(folderPath);
+                folder.files.push(file);
+                folder.latestDate = Math.max(folder.latestDate, new Date(file.modified_date));
+                folder.hasNew = folder.hasNew || file.is_new;
             });
 
-            Object.keys(folders).sort((a, b) => b.localeCompare(a)).forEach(folder => {
-                const folderDiv = document.createElement('div');
-                folderDiv.className = 'folder';
-                folderDiv.textContent = folder;
-                folderDiv.onclick = () => {
-                    folderDiv.nextElementSibling.classList.toggle('hidden');
-                };
+            return Array.from(folders.values()).sort((a, b) => b.latestDate - a.latestDate);
+        }
 
-                const filesDiv = document.createElement('div');
-                filesDiv.className = 'hidden';
-                folders[folder].sort((a, b) => a.name.localeCompare(b.name)).forEach(file => {
-                    const fileDiv = document.createElement('div');
-                    fileDiv.className = 'file';
-                    fileDiv.textContent = file.name;
-                    filesDiv.appendChild(fileDiv);
+        function renderResults() {
+            const container = document.getElementById('resultsContainer');
+            const groups = groupFilesByFolder(currentResults.slice(0, currentPage * itemsPerPage));
+            
+            container.innerHTML = groups.map(folder => `
+                <div class="folder-group">
+                    <div class="folder-header">
+                        <div>
+                            <span class="folder-name">${folder.path}</span>
+                            ${folder.hasNew ? '<span class="new-indicator">New</span>' : ''}
+                        </div>
+                        <div class="folder-info">
+                            ${folder.files.length} items • Last modified: ${new Date(folder.latestDate).toLocaleDateString()}
+                        </div>
+                    </div>
+                    <div class="file-list">
+                        ${folder.files.sort((a, b) => a.name.localeCompare(b.name)).map(file => `
+                            <div class="media-item ${file.is_new ? 'new-item' : ''}">
+                                <div class="file-name">${file.name}${file.extension}</div>
+                                <div class="file-info">
+                                    <div class="file-date">${file.modified_date.split(' ')[0]}</div>
+                                    <div class="file-size">${formatSize(file.size)}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function initSearch() {
+            try {
+                const response = await fetch('movies.json');
+                const data = await response.json();
+                allFiles = data.movies;
+                
+                fuse = new Fuse(allFiles, {
+                    keys: ['name', 'path'],
+                    threshold: 0.3,
+                    minMatchCharLength: 2
                 });
 
-                container.appendChild(folderDiv);
-                container.appendChild(filesDiv);
-            });
+                currentResults = allFiles;
+                renderResults();
+                setupSearch();
+                setupInfiniteScroll();
+            } catch (error) {
+                console.error('Error loading data:', error);
+            }
         }
 
         function setupSearch() {
-            fuse = new Fuse(mediaData, { keys: ['name', 'folder'], threshold: 0.3 });
-            document.getElementById('searchInput').addEventListener('input', (e) => {
-                const results = fuse.search(e.target.value);
-                mediaData = results.map(r => r.item);
-                renderFolders();
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.trim();
+                currentPage = 1;
+                
+                if (query === '') {
+                    currentResults = allFiles;
+                } else {
+                    currentResults = fuse.search(query).map(result => result.item);
+                }
+
+                renderResults();
             });
         }
 
-        window.addEventListener('scroll', () => {
-            if (window.innerHeight + window.scrollY >= document.body.offsetHeight) {
-                displayedItems += 20;
-                renderFolders();
-            }
-        });
+        function setupInfiniteScroll() {
+            window.addEventListener('scroll', () => {
+                const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+                if (scrollTop + clientHeight >= scrollHeight - 100 && !isLoading) {
+                    isLoading = true;
+                    document.getElementById('loading').style.display = 'block';
+                    
+                    setTimeout(() => {
+                        currentPage++;
+                        renderResults();
+                        isLoading = false;
+                        document.getElementById('loading').style.display = 'none';
+                    }, 500);
+                }
+            });
+        }
 
-        fetchMedia();
+        initSearch();
     </script>
 </body>
 </html>
