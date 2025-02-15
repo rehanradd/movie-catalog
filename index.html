@@ -34,7 +34,11 @@
 
         .search-box {
             margin-bottom: 30px;
-            position: relative;
+            position: sticky;
+            top: 0;
+            background: var(--background);
+            z-index: 100;
+            padding: 10px 0;
         }
 
         #searchInput {
@@ -47,79 +51,80 @@
             transition: all 0.3s ease;
         }
 
-        #searchInput:focus {
-            border-color: var(--secondary-color);
-            box-shadow: 0 0 15px rgba(52, 152, 219, 0.2);
+        .folder-group {
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
-        .media-list {
+        .folder-header {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .folder-name {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .folder-info {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .file-list {
+            padding: 15px;
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
+            gap: 15px;
         }
 
         .media-item {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            background: #f8f9fa;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             transition: transform 0.2s ease;
-            position: relative;
         }
 
         .media-item:hover {
-            transform: translateY(-5px);
+            transform: translateX(5px);
         }
 
-        .media-item.new::after {
-            content: 'New';
-            position: absolute;
-            top: 10px;
-            right: 10px;
+        .file-name {
+            flex: 1;
+            margin-right: 15px;
+        }
+
+        .file-info {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .file-size {
+            min-width: 80px;
+            text-align: right;
+        }
+
+        .new-indicator {
             background: #27ae60;
             color: white;
             padding: 4px 8px;
             border-radius: 4px;
             font-size: 12px;
+            margin-left: 10px;
         }
 
-        .file-name {
-            color: var(--primary-color);
-            font-weight: 600;
-            margin-bottom: 8px;
-            font-size: 18px;
-        }
-
-        .file-path {
-            color: #7f8c8d;
-            font-size: 14px;
-            margin-bottom: 8px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .file-info {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 14px;
-            color: #95a5a6;
-        }
-
-        .file-size::before {
-            content: '📦 ';
-        }
-
-        .file-date::before {
-            content: '📅 ';
-        }
-
-        .no-results {
+        .loading {
             text-align: center;
+            padding: 20px;
             color: #95a5a6;
-            padding: 40px;
-            font-size: 18px;
         }
     </style>
 </head>
@@ -128,14 +133,18 @@
         <div class="search-box">
             <input type="text" id="searchInput" placeholder="Search files or folders...">
         </div>
-        <div id="resultsContainer" class="media-list"></div>
+        <div id="resultsContainer"></div>
+        <div id="loading" class="loading">Loading...</div>
     </div>
 
     <script>
-        let allMedia = [];
+        let allFiles = [];
         let fuse = null;
+        let currentPage = 1;
+        const itemsPerPage = 40;
+        let isLoading = false;
+        let currentResults = [];
 
-        // Format file size
         function formatSize(bytes) {
             if (bytes === 0) return '0 Bytes';
             const k = 1024;
@@ -144,67 +153,113 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        // Render media items
-        function renderMedia(items) {
-            const container = document.getElementById('resultsContainer');
-            if (items.length === 0) {
-                container.innerHTML = '<div class="no-results">No files found matching your search</div>';
-                return;
-            }
+        function groupFilesByFolder(files) {
+            const folders = new Map();
+            
+            files.forEach(file => {
+                const folderPath = file.path;
+                if (!folders.has(folderPath)) {
+                    folders.set(folderPath, {
+                        path: folderPath,
+                        files: [],
+                        latestDate: new Date(file.modified_date),
+                        hasNew: file.is_new
+                    });
+                }
+                
+                const folder = folders.get(folderPath);
+                folder.files.push(file);
+                folder.latestDate = Math.max(folder.latestDate, new Date(file.modified_date));
+                folder.hasNew = folder.hasNew || file.is_new;
+            });
 
-            container.innerHTML = items.map(item => `
-                <div class="media-item ${item.is_new ? 'new' : ''}">
-                    <div class="file-name">${item.name}${item.extension}</div>
-                    <div class="file-path">${item.path}</div>
-                    <div class="file-info">
-                        <span class="file-size">${formatSize(item.size)}</span>
-                        <span class="file-date">${item.modified_date}</span>
+            return Array.from(folders.values()).sort((a, b) => b.latestDate - a.latestDate);
+        }
+
+        function renderResults() {
+            const container = document.getElementById('resultsContainer');
+            const groups = groupFilesByFolder(currentResults.slice(0, currentPage * itemsPerPage));
+            
+            container.innerHTML = groups.map(folder => `
+                <div class="folder-group">
+                    <div class="folder-header">
+                        <div>
+                            <span class="folder-name">${folder.path}</span>
+                            ${folder.hasNew ? '<span class="new-indicator">New</span>' : ''}
+                        </div>
+                        <div class="folder-info">
+                            ${folder.files.length} items • Last modified: ${new Date(folder.latestDate).toLocaleDateString()}
+                        </div>
+                    </div>
+                    <div class="file-list">
+                        ${folder.files.sort((a, b) => a.name.localeCompare(b.name)).map(file => `
+                            <div class="media-item ${file.is_new ? 'new-item' : ''}">
+                                <div class="file-name">${file.name}${file.extension}</div>
+                                <div class="file-info">
+                                    <div class="file-date">${file.modified_date.split(' ')[0]}</div>
+                                    <div class="file-size">${formatSize(file.size)}</div>
+                                </div>
+                            </div>
+                        `).join('')}
                     </div>
                 </div>
             `).join('');
         }
 
-        // Initialize search
         async function initSearch() {
             try {
                 const response = await fetch('movies.json');
                 const data = await response.json();
-                allMedia = data.movies.sort((a, b) => 
-                    new Date(b.modified_date) - new Date(a.modified_date));
+                allFiles = data.movies;
                 
-                // Initialize Fuse.js for fuzzy search
-                const options = {
+                fuse = new Fuse(allFiles, {
                     keys: ['name', 'path'],
-                    includeScore: true,
                     threshold: 0.3,
                     minMatchCharLength: 2
-                };
-                fuse = new Fuse(allMedia, options);
+                });
 
-                renderMedia(allMedia);
+                currentResults = allFiles;
+                renderResults();
                 setupSearch();
+                setupInfiniteScroll();
             } catch (error) {
                 console.error('Error loading data:', error);
-                resultsContainer.innerHTML = '<div class="no-results">Error loading media data</div>';
             }
         }
 
-        // Setup search input handler
         function setupSearch() {
             const searchInput = document.getElementById('searchInput');
             searchInput.addEventListener('input', (e) => {
                 const query = e.target.value.trim();
-                if (query === '') {
-                    renderMedia(allMedia);
-                    return;
-                }
+                currentPage = 1;
                 
-                const results = fuse.search(query);
-                renderMedia(results.map(result => result.item));
+                if (query === '') {
+                    currentResults = allFiles;
+                } else {
+                    currentResults = fuse.search(query).map(result => result.item);
+                }
+
+                renderResults();
             });
         }
 
-        // Initial load
+        function setupInfiniteScroll() {
+            window.addEventListener('scroll', () => {
+                const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
+                if (scrollTop + clientHeight >= scrollHeight - 100 && !isLoading) {
+                    isLoading = true;
+                    document.getElementById('loading').style.display = 'block';
+                    
+                    setTimeout(() => {
+                        currentPage++;
+                        renderResults();
+                        isLoading = false;
+                        document.getElementById('loading').style.display = 'none';
+                    }, 500);
+                }
+            });
+        }
+
         initSearch();
     </script>
 </body>
