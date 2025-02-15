@@ -7,9 +7,10 @@
     <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
     <style>
         :root {
-            --primary: #2a2a2a;
-            --secondary: #f5f5f5;
-            --accent: #007bff;
+            --primary: #2d2d2d;
+            --secondary: #f8f9fa;
+            --accent: #4a90e2;
+            --highlight: #fff3cd;
         }
 
         * {
@@ -22,6 +23,7 @@
         body {
             background: var(--secondary);
             color: var(--primary);
+            line-height: 1.6;
         }
 
         .container {
@@ -34,96 +36,101 @@
             background: var(--primary);
             color: white;
             padding: 1rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 1rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
         .search-container {
             display: flex;
             gap: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 1rem;
         }
 
         #search {
             flex: 1;
-            padding: 10px;
+            padding: 0.8rem;
             border: 1px solid #ddd;
             border-radius: 4px;
-            font-size: 16px;
+            font-size: 1rem;
         }
 
-        .search-type {
+        .view-toggle {
             background: var(--accent);
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 0.8rem 1.2rem;
             border-radius: 4px;
             cursor: pointer;
+            transition: opacity 0.2s;
         }
 
-        .results-count {
-            margin-bottom: 1rem;
-            color: #666;
+        .view-toggle:hover {
+            opacity: 0.9;
         }
 
-        .movies-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-        }
-
-        .movie-card {
+        .file-tree {
             background: white;
             border-radius: 8px;
-            padding: 15px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            transition: transform 0.2s;
+            padding: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
-        .movie-card:hover {
-            transform: translateY(-2px);
+        .item {
+            padding: 0.5rem 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .movie-name {
-            font-weight: bold;
-            margin-bottom: 8px;
-            color: var(--accent);
+        .folder::before {
+            content: '📁';
+            margin-right: 8px;
         }
 
-        .movie-path {
-            font-size: 0.9rem;
-            color: #666;
-            margin-bottom: 8px;
+        .file::before {
+            content: '📄';
+            margin-right: 8px;
+        }
+
+        .item-name {
+            flex: 1;
             overflow: hidden;
             text-overflow: ellipsis;
-            white-space: nowrap;
         }
 
-        .movie-details {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.8rem;
-            color: #888;
+        .item-count {
+            background: var(--secondary);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.9rem;
         }
 
-        .new-badge {
-            background: #28a745;
-            color: white;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 0.7rem;
-            margin-left: 8px;
+        .highlight {
+            background: var(--highlight);
+            padding: 0 2px;
+            border-radius: 2px;
         }
 
         .loading {
             text-align: center;
-            padding: 20px;
-            font-size: 1.2rem;
+            padding: 1rem;
+            color: #666;
         }
 
         @media (max-width: 768px) {
-            .movies-grid {
-                grid-template-columns: 1fr;
+            .container {
+                padding: 10px;
+            }
+            
+            .search-container {
+                flex-direction: column;
+            }
+            
+            .view-toggle {
+                width: 100%;
             }
         }
     </style>
@@ -137,107 +144,193 @@
 
     <div class="container">
         <div class="search-container">
-            <input type="text" id="search" placeholder="Start typing to search...">
-            <button class="search-type" id="searchType">Search Movies</button>
+            <input type="text" id="search" placeholder="Search files and folders...">
+            <button class="view-toggle" id="toggleView">Tree View</button>
         </div>
-        <div class="results-count" id="resultsCount"></div>
-        <div class="movies-grid" id="moviesGrid"></div>
+        <div class="file-tree" id="fileTree"></div>
         <div class="loading" id="loading">Loading...</div>
     </div>
 
 <script>
-let allMovies = [];
+let allItems = [];
 let fuse = null;
-let searchType = 'name'; // 'name' or 'path'
-const pageSize = 50;
-let currentPage = 1;
+let isTreeView = true;
+const pageSize = 100;
+let visibleItems = pageSize;
+let flatStructure = [];
 
-document.getElementById('searchType').addEventListener('click', () => {
-    searchType = searchType === 'name' ? 'path' : 'name';
-    document.getElementById('searchType').textContent = 
-        `Search ${searchType === 'name' ? 'Movies' : 'Folders'}`;
-    doSearch();
-});
+function createStructure(movies) {
+    const structure = { name: 'Root', path: '', children: [], count: 0, isOpen: true };
+    
+    movies.forEach(movie => {
+        const pathParts = movie.path.split('\\').filter(p => p);
+        let current = structure;
+        
+        pathParts.forEach((part, index) => {
+            let child = current.children.find(c => c.name === part);
+            if (!child) {
+                child = {
+                    name: part,
+                    path: pathParts.slice(0, index + 1).join('\\'),
+                    children: [],
+                    count: 0,
+                    isOpen: false,
+                    isFolder: true
+                };
+                current.children.push(child);
+            }
+            current = child;
+        });
+        
+        current.children.push({
+            ...movie,
+            isFolder: false
+        });
+    });
+
+    // Calculate file counts
+    function countFiles(node) {
+        if (!node.isFolder) return 1;
+        node.count = node.children.reduce((sum, child) => sum + countFiles(child), 0);
+        return node.count;
+    }
+    
+    countFiles(structure);
+    return structure;
+}
+
+function flattenStructure(node, depth = 0) {
+    let items = [];
+    if (node.isFolder) {
+        items.push({ ...node, depth, isVisible: true });
+        if (node.isOpen) {
+            node.children.forEach(child => {
+                items = items.concat(flattenStructure(child, depth + 1));
+            });
+        }
+    }
+    return items;
+}
+
+function renderTree() {
+    const container = document.getElementById('fileTree');
+    let html = '';
+    let count = 0;
+    
+    flatStructure.slice(0, visibleItems).forEach(item => {
+        if (!item.isVisible) return;
+        if (count++ >= visibleItems) return;
+        
+        html += `
+            <div class="item ${item.isFolder ? 'folder' : 'file'}" 
+                 style="padding-left: ${item.depth * 20}px"
+                 data-path="${item.path}">
+                <span class="item-name">${highlightMatches(item.name)}</span>
+                ${item.isFolder ? `<span class="item-count">${item.count}</span>` : ''}
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+    addEventListeners();
+}
+
+function highlightMatches(text) {
+    const searchTerm = document.getElementById('search').value.toLowerCase();
+    if (!searchTerm) return text;
+    
+    const regex = new RegExp(`(${searchTerm})`, 'gi');
+    return text.replace(regex, '<span class="highlight">$1</span>');
+}
+
+function addEventListeners() {
+    document.querySelectorAll('.folder').forEach(folder => {
+        folder.addEventListener('click', (e) => {
+            if (e.target.classList.contains('item-count')) return;
+            const path = folder.dataset.path;
+            const node = findNode(path);
+            node.isOpen = !node.isOpen;
+            flatStructure = flattenStructure(allItems);
+            renderTree();
+        });
+    });
+}
+
+function findNode(path) {
+    function search(node) {
+        if (node.path === path) return node;
+        for (const child of node.children) {
+            const found = search(child);
+            if (found) return found;
+        }
+    }
+    return search(allItems);
+}
 
 async function loadData() {
     try {
         const response = await fetch('movies.json');
         const data = await response.json();
-        allMovies = data.movies;
+        allItems = createStructure(data.movies);
+        flatStructure = flattenStructure(allItems);
         
-        // Initialize Fuse.js with both name and path search
+        // Initialize Fuse.js
         const options = {
             keys: ['name', 'path'],
-            threshold: 0.3,
+            threshold: 0.4,
             includeScore: true
         };
-        fuse = new Fuse(allMovies, options);
+        fuse = new Fuse(flatStructure, options);
         
         document.getElementById('loading').style.display = 'none';
-        doSearch();
+        renderTree();
     } catch (error) {
         console.error('Error loading data:', error);
         document.getElementById('loading').textContent = 'Error loading data';
     }
 }
 
-function doSearch() {
+function handleSearch() {
     const searchTerm = document.getElementById('search').value.trim();
-    let results = allMovies;
-
-    if (searchTerm) {
-        results = fuse.search(searchTerm)
-            .sort((a, b) => a.score - b.score)
-            .map(result => result.item);
+    if (!searchTerm) {
+        flatStructure = flattenStructure(allItems);
+        visibleItems = pageSize;
+        renderTree();
+        return;
     }
 
-    if (searchType === 'path') {
-        results = results.filter(movie => 
-            movie.path.toLowerCase().includes(searchTerm.toLowerCase()));
-    }
+    const results = fuse.search(searchTerm)
+        .sort((a, b) => a.score - b.score)
+        .map(result => result.item);
 
-    renderResults(results.slice(0, pageSize * currentPage));
-    document.getElementById('resultsCount').textContent = 
-        `Showing ${Math.min(pageSize * currentPage, results.length)} of ${results.length} results`;
+    // Show first 200 matches initially
+    flatStructure = results;
+    visibleItems = Math.min(pageSize, results.length);
+    renderTree();
 }
 
-function renderResults(movies) {
-    const grid = document.getElementById('moviesGrid');
-    grid.innerHTML = movies.map(movie => `
-        <div class="movie-card">
-            <div class="movie-name">
-                ${movie.name}
-                ${movie.is_new ? '<span class="new-badge">New</span>' : ''}
-            </div>
-            <div class="movie-path" title="${movie.path}">${movie.path}</div>
-            <div class="movie-details">
-                <span>${formatSize(movie.size)}</span>
-                <span>${movie.modified_date}</span>
-            </div>
-        </div>
-    `).join('');
-}
-
-function formatSize(bytes) {
-    if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(1)} GB`;
-    if (bytes >= 1e6) return `${(bytes / 1e6).toFixed(1)} MB`;
-    return `${(bytes / 1e3).toFixed(1)} KB`;
-}
-
-// Debounce search input
+// Debounce search
 let searchTimeout;
 document.getElementById('search').addEventListener('input', () => {
     clearTimeout(searchTimeout);
-    searchTimeout = setTimeout(doSearch, 300);
+    searchTimeout = setTimeout(handleSearch, 300);
 });
 
 // Infinite scroll
 window.addEventListener('scroll', () => {
     const { scrollTop, clientHeight, scrollHeight } = document.documentElement;
     if (scrollTop + clientHeight >= scrollHeight - 100) {
-        currentPage++;
-        doSearch();
+        visibleItems = Math.min(visibleItems + pageSize, flatStructure.length);
+        renderTree();
     }
+});
+
+// Toggle view
+document.getElementById('toggleView').addEventListener('click', () => {
+    isTreeView = !isTreeView;
+    document.getElementById('toggleView').textContent = 
+        isTreeView ? 'Tree View' : 'List View';
+    // Add list view handling if needed
 });
 
 // Initial load
