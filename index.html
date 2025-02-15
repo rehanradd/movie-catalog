@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>File Browser</title>
+    <title>Media Browser</title>
+    <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
     <style>
         :root {
             --primary-color: #2c3e50;
@@ -31,65 +32,49 @@
             margin: 0 auto;
         }
 
-        .breadcrumb {
-            display: flex;
-            gap: 8px;
+        .search-box {
+            margin-bottom: 30px;
+            position: sticky;
+            top: 0;
+            background: var(--background);
+            z-index: 100;
+            padding: 10px 0;
+        }
+
+        #searchInput {
+            width: 100%;
+            padding: 15px 20px;
+            font-size: 18px;
+            border: 2px solid #ddd;
+            border-radius: 30px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .folder-group {
+            background: white;
+            border-radius: 12px;
             margin-bottom: 20px;
-            font-size: 14px;
-            color: #7f8c8d;
-        }
-
-        .breadcrumb span {
-            cursor: pointer;
-        }
-
-        .breadcrumb span:hover {
-            color: var(--secondary-color);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 15px;
         }
 
         .file-list {
-            display: grid;
-            gap: 10px;
+            padding-top: 10px;
         }
 
-        .file-item, .folder-item {
-            padding: 10px;
+        .media-item {
+            padding: 15px;
             border-radius: 8px;
-            background: white;
+            background: #f8f9fa;
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 10px;
-            cursor: pointer;
             transition: transform 0.2s ease;
         }
 
-        .file-item:hover, .folder-item:hover {
+        .media-item:hover {
             transform: translateX(5px);
-        }
-
-        .file-icon, .folder-icon {
-            width: 24px;
-            height: 24px;
-        }
-
-        .file-name {
-            flex: 1;
-        }
-
-        .file-info {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            font-size: 14px;
-            color: #7f8c8d;
-        }
-
-        .new-indicator {
-            background: #27ae60;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
         }
 
         .loading {
@@ -101,130 +86,68 @@
 </head>
 <body>
     <div class="container">
-        <div class="breadcrumb" id="breadcrumb">
-            <span onclick="navigateTo('root')">Home</span>
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="Search files or folders...">
         </div>
-        <div id="fileList" class="file-list"></div>
+        <div id="resultsContainer"></div>
         <div id="loading" class="loading">Loading...</div>
     </div>
 
     <script>
-        let currentPath = 'root';
-        let currentData = [];
-        let itemsPerPage = 20;
+        let allFiles = [];
+        let fuse = null;
         let currentPage = 1;
+        const itemsPerPage = 40;
         let isLoading = false;
+        let currentResults = [];
 
-        const mockData = {
-            root: {
-                type: 'folder',
-                children: ['C:', 'D:', 'E:']
-            },
-            'C:': {
-                type: 'folder',
-                children: ['Program Files', 'Users', 'Windows']
-            },
-            'D:': {
-                type: 'folder',
-                children: ['Movies', 'Music', 'Documents']
-            },
-            'E:': {
-                type: 'folder',
-                children: ['Backup', 'Projects']
-            },
-            'Movies': {
-                type: 'folder',
-                children: ['Action', 'Comedy', 'Drama']
-            },
-            'Action': {
-                type: 'folder',
-                children: ['movie1.mp4', 'movie2.mkv', 'movie3.avi']
-            },
-            'Comedy': {
-                type: 'folder',
-                children: ['comedy1.mp4', 'comedy2.mkv']
-            },
-            'Drama': {
-                type: 'folder',
-                children: ['drama1.mp4', 'drama2.mkv']
+        async function loadMovies() {
+            try {
+                const response = await fetch('movies.json');
+                const data = await response.json();
+                allFiles = data.movies;
+                
+                fuse = new Fuse(allFiles, { keys: ['name', 'path'], threshold: 0.3 });
+                currentResults = allFiles;
+                renderResults();
+                setupSearch();
+                setupInfiniteScroll();
+            } catch (error) {
+                console.error('Error loading data:', error);
             }
-        };
-
-        function formatSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        function renderBreadcrumb(path) {
-            const parts = path.split('/');
-            const breadcrumb = document.getElementById('breadcrumb');
-            breadcrumb.innerHTML = parts.map((part, index) => `
-                <span onclick="navigateTo('${parts.slice(0, index + 1).join('/')}')">${part}</span>
-            `).join(' > ');
-        }
-
-        function renderFileList() {
-            const container = document.getElementById('fileList');
-            const data = currentData.slice(0, currentPage * itemsPerPage);
-            
-            container.innerHTML = data.map(item => `
-                <div class="${item.type === 'folder' ? 'folder-item' : 'file-item'}" onclick="${item.type === 'folder' ? `navigateTo('${currentPath}/${item.name}')` : ''}">
-                    <img src="${item.type === 'folder' ? 'folder-icon.png' : 'file-icon.png'}" alt="${item.type}" class="${item.type === 'folder' ? 'folder-icon' : 'file-icon'}">
-                    <div class="file-name">${item.name}</div>
-                    ${item.type === 'file' ? `
-                        <div class="file-info">
-                            <div>${formatSize(item.size)}</div>
-                            <div>${item.modified_date}</div>
-                            ${item.is_new ? '<div class="new-indicator">New</div>' : ''}
-                        </div>
-                    ` : ''}
+        function renderResults() {
+            const container = document.getElementById('resultsContainer');
+            container.innerHTML = currentResults.slice(0, currentPage * itemsPerPage).map(file => `
+                <div class="media-item">
+                    <div class="file-name">${file.name}${file.extension}</div>
+                    <div class="file-info">${file.size} MB</div>
                 </div>
             `).join('');
         }
 
-        function navigateTo(path) {
-            currentPath = path;
-            currentPage = 1;
-            renderBreadcrumb(path);
-            loadData(path);
-        }
-
-        function loadData(path) {
-            const data = mockData[path.split('/').pop()]?.children || [];
-            currentData = data.map(item => ({
-                name: item,
-                type: item.includes('.') ? 'file' : 'folder',
-                size: Math.floor(Math.random() * 1000000000),
-                modified_date: new Date().toLocaleDateString(),
-                is_new: Math.random() > 0.5
-            })).sort((a, b) => a.name.localeCompare(b.name));
-
-            renderFileList();
+        function setupSearch() {
+            document.getElementById('searchInput').addEventListener('input', (e) => {
+                const query = e.target.value.trim();
+                currentPage = 1;
+                currentResults = query ? fuse.search(query).map(result => result.item) : allFiles;
+                renderResults();
+            });
         }
 
         function setupInfiniteScroll() {
             window.addEventListener('scroll', () => {
-                const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
-                if (scrollTop + clientHeight >= scrollHeight - 100 && !isLoading) {
+                if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 100 && !isLoading) {
                     isLoading = true;
-                    document.getElementById('loading').style.display = 'block';
-                    
-                    setTimeout(() => {
-                        currentPage++;
-                        renderFileList();
-                        isLoading = false;
-                        document.getElementById('loading').style.display = 'none';
-                    }, 500);
+                    currentPage++;
+                    renderResults();
+                    isLoading = false;
                 }
             });
         }
 
-        // Initial load
-        navigateTo('root');
-        setupInfiniteScroll();
+        loadMovies();
     </script>
 </body>
 </html>
