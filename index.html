@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Media Explorer</title>
+    <title>Media Browser</title>
     <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2"></script>
     <style>
         :root {
@@ -34,11 +34,7 @@
 
         .search-box {
             margin-bottom: 30px;
-            position: sticky;
-            top: 0;
-            background: var(--background);
-            z-index: 100;
-            padding: 10px 0;
+            position: relative;
         }
 
         #searchInput {
@@ -51,83 +47,79 @@
             transition: all 0.3s ease;
         }
 
-        .drive-list {
+        #searchInput:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 15px rgba(52, 152, 219, 0.2);
+        }
+
+        .media-list {
             display: grid;
-            gap: 10px;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
         }
 
-        .drive-item, .folder-item {
+        .media-item {
             background: white;
-            border-radius: 8px;
-            padding: 15px;
+            border-radius: 12px;
+            padding: 20px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            cursor: pointer;
             transition: transform 0.2s ease;
+            position: relative;
         }
 
-        .drive-item:hover, .folder-item:hover {
-            transform: translateX(5px);
+        .media-item:hover {
+            transform: translateY(-5px);
         }
 
-        .drive-header, .folder-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .drive-name, .folder-name {
-            font-weight: 600;
-            color: var(--primary-color);
-        }
-
-        .file-list {
-            padding-left: 20px;
-            margin-top: 10px;
-            display: none;
-        }
-
-        .file-item {
-            padding: 10px;
-            border-radius: 6px;
-            background: #f8f9fa;
-            margin-bottom: 5px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .file-name {
-            flex: 1;
-            margin-right: 15px;
-        }
-
-        .file-info {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-
-        .file-size {
-            min-width: 80px;
-            text-align: right;
-        }
-
-        .new-indicator {
+        .media-item.new::after {
+            content: 'New';
+            position: absolute;
+            top: 10px;
+            right: 10px;
             background: #27ae60;
             color: white;
             padding: 4px 8px;
             border-radius: 4px;
             font-size: 12px;
-            margin-left: 10px;
         }
 
-        .loading {
-            text-align: center;
-            padding: 20px;
+        .file-name {
+            color: var(--primary-color);
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 18px;
+        }
+
+        .file-path {
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-bottom: 8px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .file-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
             color: #95a5a6;
         }
-        .loading {
-            display: none;
+
+        .file-size::before {
+            content: '📦 ';
+        }
+
+        .file-date::before {
+            content: '📅 ';
+        }
+
+        .no-results {
+            text-align: center;
+            color: #95a5a6;
+            padding: 40px;
+            font-size: 18px;
         }
     </style>
 </head>
@@ -136,17 +128,14 @@
         <div class="search-box">
             <input type="text" id="searchInput" placeholder="Search files or folders...">
         </div>
-        <div id="resultsContainer" class="drive-list"></div>
-        <div id="loading" class="loading">Loading...</div>
+        <div id="resultsContainer" class="media-list"></div>
     </div>
 
     <script>
-        let allFiles = [];
+        let allMedia = [];
         let fuse = null;
 
-        // Hide loading initially
-        document.getElementById('loading').style.display = 'none';
-
+        // Format file size
         function formatSize(bytes) {
             if (bytes === 0) return '0 Bytes';
             const k = 1024;
@@ -155,151 +144,67 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        function isNewFile(date) {
-            const fileDate = new Date(date);
-            const today = new Date();
-            return fileDate.toDateString() === today.toDateString();
-        }
-
-        function sortFiles(files) {
-            return files.sort((a, b) => {
-                const aNum = parseInt(a.name.match(/\d+/)?.[0]) || NaN;
-                const bNum = parseInt(b.name.match(/\d+/)?.[0]) || NaN;
-
-                if (!isNaN(aNum) && !isNaN(bNum)) {
-                    return aNum - bNum;
-                }
-                return new Date(b.modified_date) - new Date(a.modified_date);
-            });
-        }
-
-        function groupFilesByFolder(files) {
-            const folders = new Map();
-
-            files.forEach(file => {
-                const folderPath = file.path;
-                if (!folders.has(folderPath)) {
-                    folders.set(folderPath, {
-                        path: folderPath,
-                        files: [],
-                        latestDate: new Date(file.modified_date),
-                        hasNew: file.is_new
-                    });
-                }
-
-                const folder = folders.get(folderPath);
-                folder.files.push(file);
-                folder.latestDate = Math.max(folder.latestDate, new Date(file.modified_date));
-                folder.hasNew = folder.hasNew || file.is_new;
-            });
-
-            return Array.from(folders.values());
-        }
-
-        function renderDrive(drive) {
+        // Render media items
+        function renderMedia(items) {
             const container = document.getElementById('resultsContainer');
-            const driveItem = document.createElement('div');
-            driveItem.className = 'drive-item';
-            driveItem.innerHTML = `
-                <div class="drive-header">
-                    <div class="drive-name">${drive}</div>
+            if (items.length === 0) {
+                container.innerHTML = '<div class="no-results">No files found matching your search</div>';
+                return;
+            }
+
+            container.innerHTML = items.map(item => `
+                <div class="media-item ${item.is_new ? 'new' : ''}">
+                    <div class="file-name">${item.name}${item.extension}</div>
+                    <div class="file-path">${item.path}</div>
+                    <div class="file-info">
+                        <span class="file-size">${formatSize(item.size)}</span>
+                        <span class="file-date">${item.modified_date}</span>
+                    </div>
                 </div>
-                <div class="file-list"></div>
-            `;
-            container.appendChild(driveItem);
-
-            driveItem.addEventListener('click', () => {
-                const fileList = driveItem.querySelector('.file-list');
-                const isExpanded = fileList.style.display === 'block';
-                fileList.style.display = isExpanded ? 'none' : 'block';
-
-                if (!isExpanded && fileList.children.length === 0) {
-                    document.getElementById('loading').style.display = 'block';
-                    setTimeout(() => {
-                        const folders = groupFilesByFolder(allFiles.filter(file => file.path.startsWith(drive)));
-                        folders.forEach(folder => renderFolder(folder, fileList));
-                        document.getElementById('loading').style.display = 'none';
-                    }, 500);
-                }
-            });
+            `).join('');
         }
 
-        function renderFolder(folder, parent) {
-            const folderItem = document.createElement('div');
-            folderItem.className = 'folder-item';
-            folderItem.innerHTML = `
-                <div class="folder-header">
-                    <div class="folder-name">${folder.path}</div>
-                </div>
-                <div class="file-list"></div>
-            `;
-            parent.appendChild(folderItem);
-
-            folderItem.addEventListener('click', () => {
-                const fileList = folderItem.querySelector('.file-list');
-                const isExpanded = fileList.style.display === 'block';
-                fileList.style.display = isExpanded ? 'none' : 'block';
-
-                if (!isExpanded && fileList.children.length === 0) {
-                    document.getElementById('loading').style.display = 'block';
-                    setTimeout(() => {
-                        const sortedFiles = sortFiles(folder.files);
-                        sortedFiles.forEach(file => renderFile(file, fileList));
-                        document.getElementById('loading').style.display = 'none';
-                    }, 500);
-                }
-            });
-        }
-
-        function renderFile(file, parent) {
-            const fileItem = document.createElement('div');
-            fileItem.className = 'file-item';
-            fileItem.innerHTML = `
-                <div class="file-name">${file.name}${file.extension}</div>
-                <div class="file-info">
-                    <div class="file-date">${file.modified_date.split(' ')[0]}</div>
-                    <div class="file-size">${formatSize(file.size)}</div>
-                    ${isNewFile(file.modified_date) ? '<div class="new-indicator">NEW</div>' : ''}
-                </div>
-            `;
-            parent.appendChild(fileItem);
-        }
-
+        // Initialize search
         async function initSearch() {
             try {
-                document.getElementById('loading').style.display = 'block';
                 const response = await fetch('movies.json');
                 const data = await response.json();
-                allFiles = data.movies;
-
-                const drives = [...new Set(allFiles.map(file => file.path.split('\\')[0]))];
-                drives.forEach(drive => renderDrive(drive));
-
-                fuse = new Fuse(allFiles, {
+                allMedia = data.movies.sort((a, b) => 
+                    new Date(b.modified_date) - new Date(a.modified_date));
+                
+                // Initialize Fuse.js for fuzzy search
+                const options = {
                     keys: ['name', 'path'],
+                    includeScore: true,
                     threshold: 0.3,
                     minMatchCharLength: 2
-                });
+                };
+                fuse = new Fuse(allMedia, options);
 
+                renderMedia(allMedia);
                 setupSearch();
             } catch (error) {
                 console.error('Error loading data:', error);
-                document.getElementById('resultsContainer').innerHTML = 
-                    '<div class="error">Failed to load data. Please check movies.json</div>';
-            } finally {
-                document.getElementById('loading').style.display = 'none';
+                resultsContainer.innerHTML = '<div class="no-results">Error loading media data</div>';
             }
         }
 
+        // Setup search input handler
         function setupSearch() {
             const searchInput = document.getElementById('searchInput');
             searchInput.addEventListener('input', (e) => {
                 const query = e.target.value.trim();
-                // Implement search logic here
+                if (query === '') {
+                    renderMedia(allMedia);
+                    return;
+                }
+                
+                const results = fuse.search(query);
+                renderMedia(results.map(result => result.item));
             });
         }
 
-        // Initialize the explorer
+        // Initial load
         initSearch();
     </script>
 </body>
