@@ -6,133 +6,136 @@
     <title>Video Library Manager</title>
     <style>
         :root {
-    --primary: #2d3748;
-    --secondary: #f7fafc;
-    --accent: #4299e1;
-    --highlight: #c6f6d5;
-    --text: #4a5568;
-}
+            --primary: #2d3748;
+            --secondary: #f7fafc;
+            --accent: #4299e1;
+            --highlight: #c6f6d5;
+            --text: #4a5568;
+        }
 
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    font-family: 'Inter', system-ui, sans-serif;
-}
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', system-ui, sans-serif;
+        }
 
-body {
-    background: var(--secondary);
-    color: var(--text);
-    line-height: 1.6;
-}
+        body {
+            background: var(--secondary);
+            color: var(--text);
+            line-height: 1.6;
+        }
 
-.container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 20px;
-}
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
 
-.header {
-    background: var(--primary);
-    color: white;
-    padding: 1rem;
-    margin-bottom: 1rem;
-}
+        .header {
+            background: var(--primary);
+            color: white;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
 
-.search-box {
-    width: 100%;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    border: 2px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 1rem;
-}
+        .search-box {
+            width: 100%;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
 
-.content-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 1rem;
-}
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
 
-.item-card {
-    background: white;
-    border-radius: 8px;
-    padding: 1rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    cursor: pointer;
-    transition: transform 0.2s;
-    position: relative;
-}
+        .item-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: transform 0.2s;
+            position: relative;
+            text-align: center;
+        }
 
-.item-card:hover {
-    transform: translateY(-2px);
-}
+        .item-card:hover {
+            transform: translateY(-2px);
+        }
 
-.item-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.5rem;
-}
+        .item-icon {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+        }
 
-.item-name {
-    font-weight: 600;
-    color: var(--primary);
-}
+        .item-name {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
 
-.item-type {
-    font-size: 0.9rem;
-    color: #718096;
-}
+        .item-type {
+            font-size: 0.9rem;
+            color: #718096;
+        }
 
-.item-path {
-    color: #718096;
-    font-size: 0.9rem;
-    margin-bottom: 0.5rem;
-    word-break: break-word;
-}
+        .item-path {
+            color: #718096;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            word-break: break-word;
+        }
 
-.item-details {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
+        .item-details {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-.new-badge {
-    background: #48bb78;
-    color: white;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 0.8rem;
-}
+        .new-badge {
+            background: #48bb78;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
 
-.breadcrumb {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-    flex-wrap: wrap;
-}
+        .breadcrumb {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
 
-.breadcrumb-item {
-    color: var(--accent);
-    cursor: pointer;
-}
+        .breadcrumb-item {
+            color: var(--accent);
+            cursor: pointer;
+        }
 
-.highlight {
-    background-color: var(--highlight);
-    padding: 0 2px;
-    border-radius: 2px;
-}
+        .highlight {
+            background-color: var(--highlight);
+            padding: 0 2px;
+            border-radius: 2px;
+        }
 
-@media (max-width: 768px) {
-    .container {
-        padding: 10px;
-    }
-    
-    .content-grid {
-        grid-template-columns: 1fr;
-    }
-}
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
@@ -151,195 +154,208 @@ body {
 
     <script>
         class VideoLibrary {
-    constructor() {
-        this.library = { name: 'Root', path: '', items: [], isFolder: true };
-        this.currentPath = [];
-        this.searchTerm = '';
-        this.visibleItems = 50;
-        this.pageSize = 50;
-        this.init();
-    }
-
-    async init() {
-        await this.loadData();
-        this.setupEventListeners();
-        this.renderContent();
-        document.getElementById('loading').remove();
-    }
-
-    async loadData() {
-        try {
-            const response = await fetch('movies.json');
-            const data = await response.json();
-            this.processItems(data.movies);
-        } catch (error) {
-            console.error('Error:', error);
-            document.getElementById('loading').textContent = 'Failed to load data';
-        }
-    }
-
-    processItems(files) {
-        files.forEach(file => {
-            const pathParts = file.path.split('\\').filter(p => p);
-            let currentFolder = this.library;
-
-            pathParts.forEach((part, index) => {
-                let folder = currentFolder.items.find(item => item.name === part && item.isFolder);
-                
-                if (!folder) {
-                    folder = {
-                        name: part,
-                        path: pathParts.slice(0, index+1).join('\\'),
-                        items: [],
-                        isFolder: true,
-                        modified: file.modified_date,
-                        new: this.isNew(file.modified_date)
-                    };
-                    currentFolder.items.push(folder);
-                }
-                
-                currentFolder = folder;
-            });
-
-            currentFolder.items.push({
-                ...file,
-                name: file.name,
-                path: file.path,
-                isFolder: false,
-                new: this.isNew(file.modified_date)
-            });
-        });
-    }
-
-    isNew(dateString) {
-        const fileDate = new Date(dateString);
-        return (Date.now() - fileDate) < 24 * 60 * 60 * 1000;
-    }
-
-    getCurrentItems() {
-        let currentFolder = this.library;
-        const path = this.currentPath.join('\\');
-
-        if (this.searchTerm) {
-            return this.searchItems(this.library);
-        }
-
-        this.currentPath.forEach(part => {
-            currentFolder = currentFolder.items.find(item => item.name === part && item.isFolder);
-        });
-
-        return currentFolder ? currentFolder.items : [];
-    }
-
-    searchItems(folder) {
-        const results = [];
-        const searchLower = this.searchTerm.toLowerCase();
-        
-        folder.items.forEach(item => {
-            if (item.name.toLowerCase().includes(searchLower)) {
-                results.push(item);
-            }
-            if (item.isFolder) {
-                results.push(...this.searchItems(item));
-            }
-        });
-
-        return results;
-    }
-
-    renderContent() {
-        const items = this.getCurrentItems()
-            .sort((a, b) => new Date(b.modified || b.modified_date) - new Date(a.modified || a.modified_date))
-            .slice(0, this.visibleItems);
-
-        const grid = document.getElementById('contentGrid');
-        grid.innerHTML = items.map(item => this.createItemCard(item)).join('');
-        this.renderBreadcrumb();
-    }
-
-    createItemCard(item) {
-        const highlight = text => text.replace(
-            new RegExp(this.searchTerm, 'gi'),
-            match => `<span class="highlight">${match}</span>`
-        );
-
-        return `
-            <div class="item-card" data-path="${item.path}" data-type="${item.isFolder ? 'folder' : 'file'}">
-                ${item.new ? '<div class="new-badge">New</div>' : ''}
-                <div class="item-header">
-                    <div class="item-name">${highlight(item.name)}</div>
-                    <div class="item-type">${item.isFolder ? '📁 Folder' : '📄 File'}</div>
-                </div>
-                <div class="item-path">${highlight(item.path)}</div>
-                ${!item.isFolder ? `
-                <div class="item-details">
-                    <span>${this.formatSize(item.size)}</span>
-                    <span>${item.modified_date}</span>
-                </div>` : ''}
-            </div>
-        `;
-    }
-
-    formatSize(bytes) {
-        if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(1)} GB`;
-        if (bytes >= 1e6) return `${(bytes / 1e6).toFixed(1)} MB`;
-        return `${(bytes / 1e3).toFixed(0)} KB`;
-    }
-
-    renderBreadcrumb() {
-        const breadcrumb = document.getElementById('breadcrumb');
-        const path = ['Root', ...this.currentPath];
-        
-        breadcrumb.innerHTML = path.map((part, index) => 
-            `<span class="breadcrumb-item" data-index="${index}">${part}</span>`
-        ).join(' › ');
-    }
-
-    setupEventListeners() {
-        let searchTimeout;
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            this.searchTerm = e.target.value;
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
+            constructor() {
+                this.library = { name: 'Root', path: '', items: [], isFolder: true };
                 this.currentPath = [];
-                this.visibleItems = this.pageSize;
-                this.renderContent();
-            }, 300);
-        });
-
-        document.getElementById('contentGrid').addEventListener('click', (e) => {
-            const card = e.target.closest('.item-card');
-            if (card && card.dataset.type === 'folder') {
-                this.currentPath = card.dataset.path.split('\\').filter(p => p);
-                this.visibleItems = this.pageSize;
-                this.renderContent();
+                this.searchTerm = '';
+                this.visibleItems = 50;
+                this.pageSize = 50;
+                this.init();
             }
-        });
 
-        document.getElementById('breadcrumb').addEventListener('click', (e) => {
-            const breadcrumbItem = e.target.closest('.breadcrumb-item');
-            if (breadcrumbItem) {
-                const index = parseInt(breadcrumbItem.dataset.index);
-                this.currentPath = this.currentPath.slice(0, index - 1);
+            async init() {
+                await this.loadData();
+                this.setupEventListeners();
                 this.renderContent();
+                document.getElementById('loading').remove();
             }
-        });
 
-        window.addEventListener('scroll', () => {
-            if (this.shouldLoadMore()) {
-                this.visibleItems += this.pageSize;
-                this.renderContent();
+            async loadData() {
+                try {
+                    const response = await fetch('movies.json');
+                    const data = await response.json();
+                    this.processItems(data.movies);
+                } catch (error) {
+                    console.error('Error:', error);
+                    document.getElementById('loading').textContent = 'Failed to load data';
+                }
             }
-        });
-    }
 
-    shouldLoadMore() {
-        const { scrollTop, clientHeight, scrollHeight } = document.documentElement;
-        return scrollTop + clientHeight >= scrollHeight - 100;
-    }
-}
+            processItems(files) {
+                files.forEach(file => {
+                    const pathParts = file.path.split('\\').filter(p => p);
+                    let currentFolder = this.library;
 
-new VideoLibrary();
+                    pathParts.forEach((part, index) => {
+                        let folder = currentFolder.items.find(item => item.name === part && item.isFolder);
+
+                        if (!folder) {
+                            folder = {
+                                name: part,
+                                path: pathParts.slice(0, index + 1).join('\\'),
+                                items: [],
+                                isFolder: true,
+                                modified: file.modified_date,
+                                new: this.isNew(file.modified_date)
+                            };
+                            currentFolder.items.push(folder);
+                        }
+
+                        currentFolder = folder;
+                    });
+
+                    currentFolder.items.push({
+                        ...file,
+                        name: file.name,
+                        path: file.path,
+                        isFolder: false,
+                        new: this.isNew(file.modified_date)
+                    });
+                });
+            }
+
+            isNew(dateString) {
+                const fileDate = new Date(dateString);
+                return (Date.now() - fileDate) < 24 * 60 * 60 * 1000;
+            }
+
+            getCurrentItems() {
+                let currentFolder = this.library;
+                const path = this.currentPath.join('\\');
+
+                if (this.searchTerm) {
+                    return this.searchItems(this.library);
+                }
+
+                this.currentPath.forEach(part => {
+                    currentFolder = currentFolder.items.find(item => item.name === part && item.isFolder);
+                });
+
+                return currentFolder ? currentFolder.items : [];
+            }
+
+            searchItems(folder) {
+                const results = [];
+                const searchLower = this.searchTerm.toLowerCase();
+
+                folder.items.forEach(item => {
+                    if (item.name.toLowerCase().includes(searchLower)) {
+                        results.push(item);
+                    }
+                    if (item.isFolder) {
+                        results.push(...this.searchItems(item));
+                    }
+                });
+
+                return results;
+            }
+
+            renderContent() {
+                const items = this.getCurrentItems()
+                    .sort((a, b) => new Date(b.modified || b.modified_date) - new Date(a.modified || a.modified_date))
+                    .slice(0, this.visibleItems);
+
+                const grid = document.getElementById('contentGrid');
+                grid.innerHTML = items.map(item => this.createItemCard(item)).join('');
+                this.renderBreadcrumb();
+            }
+
+            createItemCard(item) {
+                const highlight = text => text.replace(
+                    new RegExp(this.searchTerm, 'gi'),
+                    match => `<span class="highlight">${match}</span>`
+                );
+
+                const fileCount = item.isFolder ? `(${this.countFiles(item)} files)` : '';
+
+                return `
+                    <div class="item-card" data-path="${item.path}" data-type="${item.isFolder ? 'folder' : 'file'}">
+                        ${item.new ? '<div class="new-badge">New</div>' : ''}
+                        <div class="item-icon">${item.isFolder ? '📁' : '📄'}</div>
+                        <div class="item-name">${highlight(item.name)}</div>
+                        <div class="item-type">${item.isFolder ? `📁 Folder ${fileCount}` : '📄 File'}</div>
+                        <div class="item-path">${highlight(item.path)}</div>
+                        ${!item.isFolder ? `
+                        <div class="item-details">
+                            <span>${this.formatSize(item.size)}</span>
+                            <span>${item.modified_date}</span>
+                        </div>` : ''}
+                    </div>
+                `;
+            }
+
+            countFiles(folder) {
+                let count = 0;
+                folder.items.forEach(item => {
+                    if (item.isFolder) {
+                        count += this.countFiles(item);
+                    } else {
+                        count++;
+                    }
+                });
+                return count;
+            }
+
+            formatSize(bytes) {
+                if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(1)} GB`;
+                if (bytes >= 1e6) return `${(bytes / 1e6).toFixed(1)} MB`;
+                return `${(bytes / 1e3).toFixed(0)} KB`;
+            }
+
+            renderBreadcrumb() {
+                const breadcrumb = document.getElementById('breadcrumb');
+                const path = ['Root', ...this.currentPath];
+
+                breadcrumb.innerHTML = path.map((part, index) =>
+                    `<span class="breadcrumb-item" data-index="${index}">${part}</span>`
+                ).join(' › ');
+            }
+
+            setupEventListeners() {
+                let searchTimeout;
+                document.getElementById('searchInput').addEventListener('input', (e) => {
+                    this.searchTerm = e.target.value;
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        this.currentPath = [];
+                        this.visibleItems = this.pageSize;
+                        this.renderContent();
+                    }, 300);
+                });
+
+                document.getElementById('contentGrid').addEventListener('click', (e) => {
+                    const card = e.target.closest('.item-card');
+                    if (card && card.dataset.type === 'folder') {
+                        this.currentPath = card.dataset.path.split('\\').filter(p => p);
+                        this.visibleItems = this.pageSize;
+                        this.renderContent();
+                    }
+                });
+
+                document.getElementById('breadcrumb').addEventListener('click', (e) => {
+                    const breadcrumbItem = e.target.closest('.breadcrumb-item');
+                    if (breadcrumbItem) {
+                        const index = parseInt(breadcrumbItem.dataset.index);
+                        this.currentPath = this.currentPath.slice(0, index - 1);
+                        this.renderContent();
+                    }
+                });
+
+                window.addEventListener('scroll', () => {
+                    if (this.shouldLoadMore()) {
+                        this.visibleItems += this.pageSize;
+                        this.renderContent();
+                    }
+                });
+            }
+
+            shouldLoadMore() {
+                const { scrollTop, clientHeight, scrollHeight } = document.documentElement;
+                return scrollTop + clientHeight >= scrollHeight - 100;
+            }
+        }
+
+        new VideoLibrary();
     </script>
 </body>
 </html>
