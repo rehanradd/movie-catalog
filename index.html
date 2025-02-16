@@ -6,133 +6,133 @@
     <title>Video Library Manager</title>
     <style>
         :root {
-            --primary: #2d3748;
-            --secondary: #f7fafc;
-            --accent: #4299e1;
-            --highlight: #c6f6d5;
-            --text: #4a5568;
-        }
+    --primary: #2d3748;
+    --secondary: #f7fafc;
+    --accent: #4299e1;
+    --highlight: #c6f6d5;
+    --text: #4a5568;
+}
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Inter', system-ui, sans-serif;
-        }
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', system-ui, sans-serif;
+}
 
-        body {
-            background: var(--secondary);
-            color: var(--text);
-            line-height: 1.6;
-        }
+body {
+    background: var(--secondary);
+    color: var(--text);
+    line-height: 1.6;
+}
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-        }
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
 
-        .header {
-            background: var(--primary);
-            color: white;
-            padding: 1rem;
-            margin-bottom: 1rem;
-        }
+.header {
+    background: var(--primary);
+    color: white;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
 
-        .search-box {
-            width: 100%;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 1rem;
-        }
+.search-box {
+    width: 100%;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1rem;
+}
 
-        .content-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 1rem;
-        }
+.content-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
 
-        .item-card {
-            background: white;
-            border-radius: 8px;
-            padding: 1rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            cursor: pointer;
-            transition: transform 0.2s;
-            position: relative;
-        }
+.item-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    cursor: pointer;
+    transition: transform 0.2s;
+    position: relative;
+}
 
-        .item-card:hover {
-            transform: translateY(-2px);
-        }
+.item-card:hover {
+    transform: translateY(-2px);
+}
 
-        .item-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.5rem;
-        }
+.item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
 
-        .item-name {
-            font-weight: 600;
-            color: var(--primary);
-        }
+.item-name {
+    font-weight: 600;
+    color: var(--primary);
+}
 
-        .item-type {
-            font-size: 0.9rem;
-            color: #718096;
-        }
+.item-type {
+    font-size: 0.9rem;
+    color: #718096;
+}
 
-        .item-path {
-            color: #718096;
-            font-size: 0.9rem;
-            margin-bottom: 0.5rem;
-            word-break: break-word;
-        }
+.item-path {
+    color: #718096;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    word-break: break-word;
+}
 
-        .item-details {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+.item-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
 
-        .new-badge {
-            background: #48bb78;
-            color: white;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-        }
+.new-badge {
+    background: #48bb78;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+}
 
-        .breadcrumb {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
-        }
+.breadcrumb {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
 
-        .breadcrumb-item {
-            color: var(--accent);
-            cursor: pointer;
-        }
+.breadcrumb-item {
+    color: var(--accent);
+    cursor: pointer;
+}
 
-        .highlight {
-            background-color: var(--highlight);
-            padding: 0 2px;
-            border-radius: 2px;
-        }
+.highlight {
+    background-color: var(--highlight);
+    padding: 0 2px;
+    border-radius: 2px;
+}
 
-        @media (max-width: 768px) {
-            .container {
-                padding: 10px;
-            }
-            
-            .content-grid {
-                grid-template-columns: 1fr;
-            }
-        }
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+    
+    .content-grid {
+        grid-template-columns: 1fr;
+    }
+}
     </style>
 </head>
 <body>
@@ -149,8 +149,8 @@
         <div id="loading">Loading library contents...</div>
     </div>
 
-<script>
-class VideoLibrary {
+    <script>
+        class VideoLibrary {
     constructor() {
         this.library = { name: 'Root', path: '', items: [], isFolder: true };
         this.currentPath = [];
@@ -236,7 +236,7 @@ class VideoLibrary {
         const searchLower = this.searchTerm.toLowerCase();
         
         folder.items.forEach(item => {
-            if (item.name.toLowerCase().includes(searchLower) {
+            if (item.name.toLowerCase().includes(searchLower)) {
                 results.push(item);
             }
             if (item.isFolder) {
@@ -340,6 +340,6 @@ class VideoLibrary {
 }
 
 new VideoLibrary();
-</script>
+    </script>
 </body>
 </html>
